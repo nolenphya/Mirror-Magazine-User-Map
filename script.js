@@ -3,13 +3,13 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoibm9sZW5waHlhIiwiYSI6ImNtOGk3bXB1MzBhM2Qyc292Z
 const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/nolenphya/cm8hiwpmi00i001rydvfe58w5',
-  center: [-74.006, 40.7128], // Default to NYC, adjust as needed
+  center: [-74.006, 40.7128],
   zoom: 10
 });
 
 // ✅ Step 2: Fetch and parse CSV using Papa Parse
 function fetchData() {
-  const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAs2iJ6rHmqMhaqBpJ_qQlASegC-to4WoI_FKhv_twq-eG5Q9M-ZJi19emt32AQUx592l9vm-Asz6n/pub?gid=216285315&single=true&output=csv';
+  const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9tYTUHZn_xeNv_blqO8x8RngTQ1Fg14tBbhhqPvJ-BfGPyE0O54jngg-pUjuTNzhpYR6WySwdM_cu/pub?gid=1517657781&single=true&output=csv';
   
   fetch(sheetURL)
     .then(response => response.text())
@@ -32,19 +32,25 @@ function fetchData() {
 // ✅ Step 3: Add markers to the map
 function addMarkers(data) {
   data.forEach(row => {
-    // Ensure data has necessary fields
-    if (!row.Longitude || !row.Latitude) {
-      console.warn("Skipping row with missing coordinates:", row);
+    // Validate necessary data
+    if (!row.Longitude || !row.Latitude || !row.PhotoURL) {
+      console.warn("Skipping row with missing data:", row);
       return;
     }
 
-    // Create a popup with the data from the spreadsheet
+    // Create a popup with a photo and user details
+    const popupContent = `
+      <div style="max-width: 300px;">
+        <img src="${row.PhotoURL}" alt="User Photo" style="width:100%; border-radius:8px; margin-bottom:10px;">
+        <h3>${row.FullName || 'Anonymous'}</h3>
+        <p><b>Age:</b> ${row.Age || 'N/A'}</p>
+        <p><b>Email:</b> ${row.Email || 'N/A'}</p>
+        <p><b>Experience:</b> ${row.Experience || 'N/A'}</p>
+      </div>
+    `;
+
     const popup = new mapboxgl.Popup({ offset: 25 })
-      .setHTML(`
-        <h3>${row.Name || 'Unnamed Location'}</h3>
-        <p><b>Address:</b> ${row.Address || 'N/A'}</p>
-        <p><b>Phone:</b> ${row.Phone || 'N/A'}</p>
-      `);
+      .setHTML(popupContent);
 
     // Create a marker
     new mapboxgl.Marker({ color: 'purple' })
