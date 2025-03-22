@@ -40,14 +40,17 @@ function addMarkers(data) {
 
     // Create a popup with a photo and user details
     const popupContent = `
-      <div style="max-width: 300px;">
-        <img src="${row.PhotoURL}" alt="User Photo" style="width:100%; border-radius:8px; margin-bottom:10px;">
-        <h3>${row.FullName || 'Anonymous'}</h3>
-        <p><b>Age:</b> ${row.Age || 'N/A'}</p>
-        <p><b>Email:</b> ${row.Email || 'N/A'}</p>
-        <p><b>Experience:</b> ${row.Experience || 'N/A'}</p>
-      </div>
-    `;
+  <div style="max-width: 300px;">
+    <iframe src="${row.PhotoURL}" 
+         alt="User Photo" 
+         style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" /></iframe>
+    <h3>${row.FullName || 'Anonymous'}</h3>
+    <p><b>Age:</b> ${row.Age || 'N/A'}</p>
+    <p><b>Email:</b> ${row.Email || 'N/A'}</p>
+    <p><b>Experience:</b> ${row.Experience || 'N/A'}</p>
+  </div>
+`;
+
 
     const popup = new mapboxgl.Popup({ offset: 25 })
       .setHTML(popupContent);

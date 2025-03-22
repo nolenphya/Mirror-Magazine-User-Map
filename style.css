@@ -9,3 +9,13 @@ body, html {
     width: 100vw;
     height: 100vh;
   }
+
+  .mapboxgl-popup-content img {
+    max-width: 100%;    /* Ensures image doesn't overflow the popup */
+    height: auto;       /* Maintains aspect ratio */
+    max-height: 250px;  /* Optional: Limits image height */
+    border-radius: 8px; /* Rounded corners for a clean look */
+    object-fit: cover;  /* Crops the image if needed to fill the frame */
+  }
+  
+  
