@@ -41,9 +41,9 @@ function addMarkers(data) {
     // Create a popup with a photo and user details
     const popupContent = `
   <div style="max-width: 300px;">
-    <iframe src="${row.PhotoURL}" 
+    <img src="${row.PhotoURL}" 
          alt="User Photo" 
-         style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" /></iframe>
+         style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
     <h3>${row.FullName || 'Anonymous'}</h3>
     <p><b>Age:</b> ${row.Age || 'N/A'}</p>
     <p><b>Email:</b> ${row.Email || 'N/A'}</p>
