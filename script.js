@@ -46,8 +46,8 @@ function addMarkers(data) {
          style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
     <h3>${row.FullName || 'Anonymous'}</h3>
     <p><b>Age:</b> ${row.Age || 'N/A'}</p>
-    <p><b>Email:</b> ${row.Email || 'N/A'}</p>
-    <p><b>Experience:</b> ${row.Experience || 'N/A'}</p>
+    <p><b>Social Media:</b> ${row.SocialMedia || 'N/A'}</p>
+    <p><b>Photography Experience:</b> ${row.Experience || 'N/A'}</p>
   </div>
 `;
 
