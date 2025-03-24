@@ -57,7 +57,7 @@ function addMarkers(data) {
       .setHTML(popupContent);
 
     // Create a marker
-    new mapboxgl.Marker({ color: 'purple' })
+    new mapboxgl.Marker({ color: 'white' })
       .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
       .setPopup(popup)
       .addTo(map);
