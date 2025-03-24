@@ -44,7 +44,7 @@ function addMarkers(data) {
     <img src="${row.PhotoURL}" 
          alt="User Photo" 
          style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
-    <h3>${row.FullName || 'Anonymous'}</h3>
+    <h3><b>Name:</b> ${row.FullName || 'Anonymous'}</h3>
     <p><b>Age:</b> ${row.Age || 'N/A'}</p>
     <p><b>Social Media:</b> ${row.SocialMedia || 'N/A'}</p>
     <p><b>Photography Experience:</b> ${row.Experience || 'N/A'}</p>
