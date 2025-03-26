@@ -9,6 +9,9 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
 
+  <!-- Mapbox Search JS Web Framework -->
+  <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.0.0/web.js"></script>
+  
   <!-- Papa Parse -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
@@ -16,7 +19,16 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <div id="search-container">
+    <input type="text" id="search-box" placeholder="Search by artist name, experience, or email..." />
+    <button onclick="performSearch()">Search</button>
+  </div>
+
+  <button onclick="clearSearch()">Clear Search</button>
+
   <div id="map"></div>
+  
   <script src="script.js"></script>
 </body>
 </html>
