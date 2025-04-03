@@ -45,31 +45,31 @@ function addMarkers(data) {
 
     // Create a popup with a photo and user details
     const popupContent = `
-  <div style="max-width: 300px;">
-    <img src="${row.PhotoURL}" 
-         alt="User Photo" 
-         style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
-    <h3>${row.Name || 'Anonymous'}</h3>
-    <p><b>Age:</b> ${row.Age || 'N/A'}</p>
-    <p><b>Social Media:</b> ${row.Social || 'N/A'}</p>
-    <p><b>Photography Experience:</b> ${row.Experience || 'N/A'}</p>
-    <p><b>Description:</b> ${row.Description || 'N/A'}</p>
-  </div>
-`;
+      <div style="max-width: 300px;">
+        <img src="${row.PhotoURL}" 
+             alt="User Photo" 
+             style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
+        <h3>${row.Name || 'Anonymous'}</h3>
+        <p><b>Age:</b> ${row.Age || 'N/A'}</p>
+        <p><b>Social Media:</b> ${row.Social || 'N/A'}</p>
+        <p><b>Photography Experience:</b> ${row.Experience || 'N/A'}</p>
+        <p><b>Description:</b> ${row.Description || 'N/A'}</p>
+      </div>
+    `;
 
+    const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
 
-    const popup = new mapboxgl.Popup({ offset: 25 })
-      .setHTML(popupContent);
-
-    // Create a marker
-    new mapboxgl.Marker({ color: 'white' })
+    // ✅ Store marker in a variable
+    const marker = new mapboxgl.Marker({ color: 'white' })
       .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
       .setPopup(popup)
       .addTo(map);
-      marker.rowData = row; // Store row data for easy access during search
-      allMarkers.push(marker); // Save marker for filtering
+
+    marker.rowData = row; // ✅ Store row data for easy access during search
+    allMarkers.push(marker); // ✅ Save marker for filtering
   });
 }
+
 
 // ✅ Perform search based on user input
 function performSearch() {
