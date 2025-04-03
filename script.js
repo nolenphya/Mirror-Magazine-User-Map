@@ -7,23 +7,29 @@ const map = new mapboxgl.Map({
   zoom: 10
 });
 
-// Initialize the geocoder control
+// Add the geocoder (autocomplete search box) to the map
 const geocoder = new MapboxGeocoder({
-  accessToken: mapboxgl.accessToken, // your Mapbox access token
-  mapboxgl: mapboxgl,                // mapbox-gl instance
-  placeholder: 'Search for an address', // placeholder text in the search box
-  marker: { color: 'red' }           // optional: customize the marker for the search result
+  accessToken: mapboxgl.accessToken,
+  mapboxgl: mapboxgl,
+  placeholder: 'Search for an address',
+  marker: { color: 'red' },
+  proximity: {
+    longitude: -74.006,
+    latitude: 40.7128
+  },
+  countries: 'us',
+  limit: 5
 });
-
-// Add the geocoder to the map (default position is top-right)
-// Alternatively, you can specify a container by using the 'container' option.
 map.addControl(geocoder);
 
+// Optionally, listen for the result event
+geocoder.on('result', function(e) {
+  console.log('Selected location:', e.result);
+});
 
-// ✅ Step 2: Fetch and parse CSV using Papa Parse
+// ✅ Step 2: Fetch and parse CSV using Papa Parse (unchanged)
 function fetchData() {
   const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9tYTUHZn_xeNv_blqO8x8RngTQ1Fg14tBbhhqPvJ-BfGPyE0O54jngg-pUjuTNzhpYR6WySwdM_cu/pub?gid=1517657781&single=true&output=csv';
-  
   fetch(sheetURL)
     .then(response => response.text())
     .then(csvData => {
@@ -43,11 +49,10 @@ function fetchData() {
 }
 
 // ✅ Step 3: Add markers to the map
-let allMarkers = []; // Store all markers for easy filtering
+let allMarkers = [];
 
-// ✅ Modify the addMarkers function to store markers
 function addMarkers(data) {
-  allMarkers.forEach(marker => marker.remove()); // Clear old markers if any
+  allMarkers.forEach(marker => marker.remove());
   allMarkers = [];
 
   data.forEach(row => {
@@ -56,7 +61,6 @@ function addMarkers(data) {
       return;
     }
 
-    // Create a popup with a photo and user details
     const popupContent = `
       <div style="max-width: 300px;">
         <img src="${row.PhotoURL}" 
@@ -72,93 +76,15 @@ function addMarkers(data) {
 
     const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
 
-    // ✅ Store marker in a variable
     const marker = new mapboxgl.Marker({ color: 'yellow' })
       .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
       .setPopup(popup)
       .addTo(map);
 
-    marker.rowData = row; // ✅ Store row data for easy access during search
-    allMarkers.push(marker); // ✅ Save marker for filtering
+    marker.rowData = row;
+    allMarkers.push(marker);
   });
 }
-
-
-// ✅ Perform search based on user input
-function performSearch() {
-  const query = document.getElementById('search-box').value.toLowerCase().trim();
-
-  allMarkers.forEach(marker => {
-    const data = marker.rowData;
-
-// ✅ Perform this function to clear the map filter
-    function clearSearch() {
-      document.getElementById('search-box').value = ''; // Clear input field
-      allMarkers.forEach(marker => {
-        marker.getElement().style.display = 'block'; // Show all markers
-      });
-    }
-    
-
-    // Check if any field matches the search query
-    const matches = 
-      (data.Name && data.Name.toLowerCase().includes(query)) ||
-      (data.Social && data.Social.toLowerCase().includes(query)) ||
-      (data.Experience && data.Experience.toLowerCase().includes(query));
-
-    if (matches) {
-      marker.getElement().style.display = 'block'; // Show marker
-    } else {
-      marker.getElement().style.display = 'none'; // Hide marker
-    }
-  });
-}
-
-function searchAddress() {
-  const query = document.getElementById('search-box').value.trim();
-
-  if (!query) {
-    alert("Please enter an address!");
-    return;
-  }
-
-  // Mapbox Geocoding API URL
-  const geocodeURL = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}`;
-
-  fetch(geocodeURL)
-    .then(response => response.json())
-    .then(data => {
-      if (data.features.length === 0) {
-        alert("Location not found. Try again.");
-        return;
-      }
-
-      // Get the first result
-      const place = data.features[0];
-      const [lng, lat] = place.center; // Extract coordinates
-
-      // Move the map to the new location
-      map.flyTo({
-        center: [lng, lat],
-        zoom: 14
-      });
-
-      // Optional: Add a marker at the searched location
-      if (searchMarker) searchMarker.remove(); // Remove old search marker if any
-
-      searchMarker = new mapboxgl.Marker({ color: "red" })
-        .setLngLat([lng, lat])
-        .addTo(map);
-    })
-    .catch(error => {
-      console.error("Geocoding error:", error);
-      alert("Error searching address. Try again later.");
-    });
-}
-
-// Store the search marker so we can remove it later
-let searchMarker = null;
-
 
 // ✅ Step 4: Start fetching data
 map.on('load', fetchData);
