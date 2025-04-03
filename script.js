@@ -7,6 +7,19 @@ const map = new mapboxgl.Map({
   zoom: 10
 });
 
+// Initialize the geocoder control
+const geocoder = new MapboxGeocoder({
+  accessToken: mapboxgl.accessToken, // your Mapbox access token
+  mapboxgl: mapboxgl,                // mapbox-gl instance
+  placeholder: 'Search for an address', // placeholder text in the search box
+  marker: { color: 'red' }           // optional: customize the marker for the search result
+});
+
+// Add the geocoder to the map (default position is top-right)
+// Alternatively, you can specify a container by using the 'container' option.
+map.addControl(geocoder);
+
+
 // ✅ Step 2: Fetch and parse CSV using Papa Parse
 function fetchData() {
   const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9tYTUHZn_xeNv_blqO8x8RngTQ1Fg14tBbhhqPvJ-BfGPyE0O54jngg-pUjuTNzhpYR6WySwdM_cu/pub?gid=1517657781&single=true&output=csv';
