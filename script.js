@@ -60,7 +60,7 @@ function addMarkers(data) {
     const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
 
     // ✅ Store marker in a variable
-    const marker = new mapboxgl.Marker({ color: 'white' })
+    const marker = new mapboxgl.Marker({ color: 'yellow' })
       .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
       .setPopup(popup)
       .addTo(map);
@@ -100,6 +100,52 @@ function performSearch() {
     }
   });
 }
+
+function searchAddress() {
+  const query = document.getElementById('search-box').value.trim();
+
+  if (!query) {
+    alert("Please enter an address!");
+    return;
+  }
+
+  // Mapbox Geocoding API URL
+  const geocodeURL = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}`;
+
+  fetch(geocodeURL)
+    .then(response => response.json())
+    .then(data => {
+      if (data.features.length === 0) {
+        alert("Location not found. Try again.");
+        return;
+      }
+
+      // Get the first result
+      const place = data.features[0];
+      const [lng, lat] = place.center; // Extract coordinates
+
+      // Move the map to the new location
+      map.flyTo({
+        center: [lng, lat],
+        zoom: 14
+      });
+
+      // Optional: Add a marker at the searched location
+      if (searchMarker) searchMarker.remove(); // Remove old search marker if any
+
+      searchMarker = new mapboxgl.Marker({ color: "red" })
+        .setLngLat([lng, lat])
+        .addTo(map);
+    })
+    .catch(error => {
+      console.error("Geocoding error:", error);
+      alert("Error searching address. Try again later.");
+    });
+}
+
+// Store the search marker so we can remove it later
+let searchMarker = null;
+
 
 // ✅ Step 4: Start fetching data
 map.on('load', fetchData);
