@@ -27,7 +27,34 @@
 
 
   <div id="map"></div>
-  
+  <div id="legend" class="map-legend"></div>
+
+<style>
+  .map-legend {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: white;
+    border: 1px solid #aaa;
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: sans-serif;
+    z-index: 1000;
+  }
+  .legend-item {
+    padding: 5px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .legend-item.hidden {
+    text-decoration: line-through;
+    color: gray;
+    opacity: 0.6;
+  }
+</style>
+
+
   <script src="script.js"></script>
 </body>
 </html>

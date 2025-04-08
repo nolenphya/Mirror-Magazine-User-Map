@@ -49,40 +49,60 @@ function fetchData() {
 }
 
 // ✅ Step 3: Add markers to the map
-let allMarkers = [];
+const artistGroups = {}; // Artist name → list of markers
 
 function addMarkers(data) {
   allMarkers.forEach(marker => marker.remove());
   allMarkers = [];
 
   data.forEach(row => {
-    if (!row.Longitude || !row.Latitude || !row.PhotoURL) {
-      console.warn("Skipping row with missing data:", row);
-      return;
-    }
+    if (!row.Longitude || !row.Latitude) return;
 
-    const popupContent = `
-      <div style="max-width: 300px;">
-        <img src="${row.PhotoURL}" 
-             alt="User Photo" 
-             style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
-        <h3>${row.Name || 'Anonymous'}</h3>
-        <p><b>Age:</b> ${row.Age || 'N/A'}</p>
-        <p><b>Social Media:</b> ${row.Social || 'N/A'}</p>
-        <p><b>Photography Experience:</b> ${row.Experience || 'N/A'}</p>
-        <p><b>Description:</b> ${row.Description || 'N/A'}</p>
-      </div>
-    `;
-
-    const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
-
-    const marker = new mapboxgl.Marker({ color: 'yellow' })
+    const marker = new mapboxgl.Marker({ color: 'white' })
       .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
-      .setPopup(popup)
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25 }).setHTML(/* your popup HTML here */)
+      )
       .addTo(map);
 
     marker.rowData = row;
     allMarkers.push(marker);
+
+    const artist = row.Name || 'Anonymous';
+
+    if (!artistGroups[artist]) {
+      artistGroups[artist] = [];
+    }
+
+    artistGroups[artist].push(marker);
+  });
+
+  buildLegend();
+}
+
+// Add Legend
+
+function buildLegend() {
+  const legendContainer = document.getElementById('legend');
+  legendContainer.innerHTML = ''; // Clear existing
+
+  Object.keys(artistGroups).forEach(artist => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.textContent = artist;
+    item.dataset.visible = 'true';
+
+    item.onclick = () => {
+      const visible = item.dataset.visible === 'true';
+      item.dataset.visible = !visible;
+      item.classList.toggle('hidden');
+
+      artistGroups[artist].forEach(marker => {
+        marker.getElement().style.display = visible ? 'none' : 'block';
+      });
+    };
+
+    legendContainer.appendChild(item);
   });
 }
 
