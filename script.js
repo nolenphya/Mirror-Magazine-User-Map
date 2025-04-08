@@ -48,6 +48,24 @@ function fetchData() {
     .catch(error => console.error("Failed to fetch CSV:", error));
 }
 
+// Pick some predefined colors
+const artistColors = {};
+const availableColors = [
+  '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+  '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
+  '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000'
+];
+
+function getColorForArtist(artist) {
+  if (!artistColors[artist]) {
+    // Rotate through colors (fallback if we run out)
+    const color = availableColors[Object.keys(artistColors).length % availableColors.length];
+    artistColors[artist] = color;
+  }
+  return artistColors[artist];
+}
+
+
 // ✅ Step 3: Add markers to the map
 
 let allMarkers = []; // Declare this at the global level
@@ -61,10 +79,9 @@ function addMarkers(data) {
   data.forEach(row => {
     if (!row.Longitude || !row.Latitude) return;
 
-    const marker = new mapboxgl.Marker({ color: 'white' })
-      .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
-      .setPopup(
-        new mapboxgl.Popup({ offset: 25 }).setHTML(`
+    const marker = new mapboxgl.Marker({ color: markerColor })
+    .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
+    .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
           <div style="max-width: 300px;">
             <img src="${row.PhotoURL}" 
                  alt="User Photo" 
@@ -101,24 +118,46 @@ function buildLegend() {
   legendContainer.innerHTML = ''; // Clear existing
 
   Object.keys(artistGroups).forEach(artist => {
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    item.textContent = artist;
-    item.dataset.visible = 'true';
+    const color = getColorForArtist(artist);
 
-    item.onclick = () => {
-      const visible = item.dataset.visible === 'true';
-      item.dataset.visible = !visible;
-      item.classList.toggle('hidden');
+    const item = document.createElement('label');
+    item.className = 'legend-item';
+    item.style.display = 'flex';
+    item.style.alignItems = 'center';
+    item.style.gap = '8px';
+    item.style.marginBottom = '5px';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = true;
+
+    checkbox.onchange = () => {
+      const visible = checkbox.checked;
 
       artistGroups[artist].forEach(marker => {
-        marker.getElement().style.display = visible ? 'none' : 'block';
+        marker.getElement().style.display = visible ? 'block' : 'none';
       });
     };
+
+    const swatch = document.createElement('span');
+    swatch.style.backgroundColor = color;
+    swatch.style.width = '16px';
+    swatch.style.height = '16px';
+    swatch.style.borderRadius = '50%';
+    swatch.style.display = 'inline-block';
+
+    const nameText = document.createElement('span');
+    nameText.textContent = artist;
+
+    item.appendChild(checkbox);
+    item.appendChild(swatch);
+    item.appendChild(nameText);
 
     legendContainer.appendChild(item);
   });
 }
+
+
 
 // ✅ Step 4: Start fetching data
 map.on('load', fetchData);
