@@ -78,35 +78,36 @@ function addMarkers(data) {
 
   data.forEach(row => {
     if (!row.Longitude || !row.Latitude) return;
-
+  
+    const artist = row.Name || 'Anonymous';
+    const markerColor = getColorForArtist(artist); // ✅ define color here
+  
     const marker = new mapboxgl.Marker({ color: markerColor })
-    .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
-    .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
-          <div style="max-width: 300px;">
-            <img src="${row.PhotoURL}" 
-                 alt="User Photo" 
-                 style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
-            <h3>${row.Name || 'Anonymous'}</h3>
-            <p><b>Age:</b> ${row.Age || 'N/A'}</p>
-            <p><b>Social Media:</b> ${row.Social || 'N/A'}</p>
-            <p><b>Photography Experience:</b> ${row.Experience || 'N/A'}</p>
-            <p><b>Description:</b> ${row.Description || 'N/A'}</p>
-          </div>
-        `)
-      )      
+      .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
+      .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+        <div style="max-width: 300px;">
+          <img src="${row.PhotoURL}" 
+               alt="User Photo" 
+               style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
+          <h3>${row.Name || 'Anonymous'}</h3>
+          <p><b>Age:</b> ${row.Age || 'N/A'}</p>
+          <p><b>Social Media:</b> ${row.Social || 'N/A'}</p>
+          <p><b>Photography Experience:</b> ${row.Experience || 'N/A'}</p>
+          <p><b>Description:</b> ${row.Description || 'N/A'}</p>
+        </div>
+      `))
       .addTo(map);
-
+  
     marker.rowData = row;
     allMarkers.push(marker);
-
-    const artist = row.Name || 'Anonymous';
-
+  
     if (!artistGroups[artist]) {
       artistGroups[artist] = [];
     }
-
+  
     artistGroups[artist].push(marker);
   });
+  
 
   buildLegend();
 }
