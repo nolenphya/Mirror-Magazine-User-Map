@@ -49,6 +49,8 @@ function fetchData() {
 }
 
 // ✅ Step 3: Add markers to the map
+let allMarkers = []; // Declare this at the global level
+
 const artistGroups = {}; // Artist name → list of markers
 
 function addMarkers(data) {
