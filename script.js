@@ -77,13 +77,19 @@ function addMarkers(data) {
   allMarkers = [];
 
   data.forEach(row => {
-    if (!row.Longitude || !row.Latitude) return;
+    const lat = parseFloat(row.Latitude);
+const lng = parseFloat(row.Longitude);
+if (isNaN(lat) || isNaN(lng)) {
+  console.warn('Skipping row with bad coordinates:', row);
+  return;
+}
+
   
     const artist = row.Name || 'Anonymous';
     const markerColor = getColorForArtist(artist); // ✅ define color here
   
     const marker = new mapboxgl.Marker({ color: markerColor })
-      .setLngLat([parseFloat(row.Longitude), parseFloat(row.Latitude)])
+    .setLngLat([lng, lat])
       .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
         <div style="max-width: 300px;">
           <img src="${row.PhotoURL}" 
