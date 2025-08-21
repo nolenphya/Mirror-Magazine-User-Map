@@ -2,59 +2,118 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mirror Magazine Community Map</title>
-  
-  <!-- Mapbox GL JS -->
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mirror Magazine System Map</title>
 
-<!-- Mapbox Geocoder Plugin -->
-<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
-<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css" />
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
-  <!-- Mapbox Search JS Web Framework -->
-  <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.0.0/web.js"></script>
-  
-  <!-- Papa Parse -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- Mapbox GL -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 
-  <!-- Custom CSS -->
+  <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
+<header id="site-header">
+  <div class="header-left">
+    <img src="fthlogo.png" alt="Flushing Town Hall Logo" id="fth-logo">
+    <h1>The Queens Arts and Culture Map</h1>
+  </div>
+</header>
 
+  <!-- Intro Overlay -->
+  <div id="intro-overlay">
+    <div class="intro-content">
+      <h2>Welcome to the Queens Arts and Culture Map</h2>
+      <p>
+        In 2024, Flushing Town Hall was invited by the New York State Council on the Arts (NYSCA) to lead a new initiative—the Queens Cultural Mapping Project—designed to document the rich and diverse artistic landscape of Queens.
+        The project celebrates the cultural contributions of its communities while also shedding light on the challenges they face.
+        </p>
+        <p>
+        Through this work, our team connected with over 150 artists and arts and cultural organizations across the borough. A clear need emerged:
+        a centralized, accessible resource that would connect artists, cultural organizations, and community spaces throughout Queens.
+        This digital map was created in direct response to that need.
+        </p>
+        <p>
+        Our goal is for this map to be a valuable tool that fosters connections among artists, cultural workers, and community spaces in Queens—
+        supporting deeper exploration, engagement, and collaboration across the borough’s vibrant creative communities.
+        </p>
+        <p>
+        We’re excited to continue growing this resource.
+        </p>
+      </p>
+      <a href="https://airtable.com/apppBx0a9hj0Z1ciw/pagkf63IaBt2wJvFo/form" target="_blank">
+        If you’d like to add your organization to the map, please fill out this form.
+        <br/><br/>
+        <div class="logos">
+          
+  <img src="fthlogo.png" alt="FTH Logo" class="logo">
+  <img src="nyslogo.png" alt="NYS Logo" class="logo">
+        </div>
+      </a><br/>
+      <button id="close-intro">Get Started</button>
+    </div>
+  </div>
+
+<!-- Map Guide Overlay -->
+<div id="map-guide-overlay" class="map-guide-overlay" style="display: none;">
+  <!-- Add inside your info box HTML -->
+<button id="map-guide-close" style="position: absolute; top: 8px; right: 12px; font-size: 24px; cursor: pointer;">&times;</button>
+
+  <div class="map-guide-content">
+    <h2>Navigating the Map</h2>
+    <p>Your guide to discovering and connecting with arts and culture spaces across Queens, New York.</p>
+    <ul style="text-align: left;">
+      <li>🗺️ <a href="https://airtable.com/apppBx0a9hj0Z1ciw/pagkf63IaBt2wJvFo/form" style="font-weight: bold;">Join the Map:</a> All Queens-based arts and culture organizations with a physical location are encouraged to submit a listing. Once approved, it will appear on the map. To request changes to your listing, reach out to the Project Manager, <a href="mailto:nbedon@flushingtownhall.org">Natalie Bedon.</a> </li>
+      <br/>
+      <li>🔍 <b>Explore Queens:</b> Use the filter tool to search for organizations by neighborhood, venue type, and program offerings. </li>
+      <br/>
+      <li>📍 <b>Share the Map:</b> Invite your creative networks to join and explore the map! </li>
+    </ul>
+    <p>Have a question? <a href="mailto:info@example.org">Contact us</a></p>
+  </div>
+</div>
+
+
+
+  <!-- Map -->
   <div id="map"></div>
-  <div id="legend" class="map-legend"></div>
 
-<style>
-  .map-legend {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: white;
-    border: 1px solid #aaa;
-    padding: 10px;
-    max-height: 300px;
-    overflow-y: auto;
-    font-family: sans-serif;
-    z-index: 1000;
-  }
-  .legend-item {
-    padding: 5px;
-    cursor: pointer;
-    user-select: none;
-  }
-  .legend-item.hidden {
-    text-decoration: line-through;
-    color: gray;
-    opacity: 0.6;
-  }
-</style>
+<button id="info-button" title="Info">ℹ️</button>
+
+  <!-- Legend Panel -->
+  <div id="legend-panel">
+    <div id="legend-handle"></div>
+    <div class="legend-header">
+      <button id="reset-legend">Reset</button>
+        <button id="legend-toggle" title="Collapse Legend">Hide</button>
+    </div>
+
+    <div id="address-search">
+   <label for="org-directory">Search the directory:</label>
+<input type="text" id="search-input" placeholder="Search by name or tag..." style="width: 100%; padding: 6px;" />
+<div id="search-results" style="margin-top: 10px;"></div>
 
 
+    </div>
+    <div id="legend-wrapper">
+      <div id="legend-content">
+        <div id="legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="script.js"></script>
+  <!-- jQuery + Select2 JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 </body>
 </html>

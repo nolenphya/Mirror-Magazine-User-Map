@@ -1,170 +1,533 @@
-// ✅ Step 1: Initialize the Mapbox map
-mapboxgl.accessToken = 'pk.eyJ1Ijoibm9sZW5waHlhIiwiYSI6ImNtOGk3bXB1MzBhM2Qyc292ZjZrZ2tjMHMifQ.ZItrPCguE2g3w99InSdzLQ';
+// Mapbox Setup
+
+mapboxgl.accessToken = 'pk.eyJ1IjoiZmx1c2hpbmd0b3duaGFsbCIsImEiOiJjbWRmZHFxb2EwY2p3MmlxM3JoMmJwNDVrIn0.KDnT79yQuUeYVaqcKlmQGQ';
 const map = new mapboxgl.Map({
   container: 'map',
-  style: 'mapbox://styles/nolenphya/cm8hobpgo00u101s5d3ebdjdz',
-  center: [-74.006, 40.7128],
-  zoom: 10
+ style: 'mapbox://styles/mapbox/light-v11',
+  center: [-73.94, 40.73],
+  zoom: 11
 });
 
-// Add the geocoder (autocomplete search box) to the map
-const geocoder = new MapboxGeocoder({
-  accessToken: mapboxgl.accessToken,
-  mapboxgl: mapboxgl,
-  placeholder: 'Search for an address',
-  marker: { color: 'red' },
-  proximity: {
-    longitude: -74.006,
-    latitude: 40.7128
-  },
-  countries: 'us',
-  limit: 5
-});
-map.addControl(geocoder);
 
-// Optionally, listen for the result event
-geocoder.on('result', function(e) {
-  console.log('Selected location:', e.result);
-});
+// Airtable Setup
+const AIRTABLE_API_KEY = 'patboskAQTJUi9FlQ.1c30c3c632cd4d7bd03cf949e50edd922425aba8dcbf0c8a6002e98db67c74a3';
+const BASE_ID = 'apppBx0a9hj0Z1ciw';
+const TABLE_NAME = 'tblgqyoE5TZUzQDKw';
+const AIRTABLE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
-// ✅ Step 2: Fetch and parse CSV using Papa Parse (unchanged)
-function fetchData() {
-  const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT9tYTUHZn_xeNv_blqO8x8RngTQ1Fg14tBbhhqPvJ-BfGPyE0O54jngg-pUjuTNzhpYR6WySwdM_cu/pub?gid=1517657781&single=true&output=csv';
-  fetch(sheetURL)
-    .then(response => response.text())
-    .then(csvData => {
-      Papa.parse(csvData, {
-        header: true,
-        dynamicTyping: true,
-        complete: (results) => {
-          console.log("Parsed Data:", results.data);
-          addMarkers(results.data);
-        },
-        error: (error) => {
-          console.error("Error parsing CSV:", error);
-        }
-      });
-    })
-    .catch(error => console.error("Failed to fetch CSV:", error));
-}
+// Icon mapping for tags
+const iconMap = {
+  'Community Garden': 'community-garden',
+  'Gallery': 'gallery',
+  'Museum/Cultural Institution': 'museum',
+  'Music Group/Vocal Ensembles': 'music-group-vocal-ensemble',
+  'Dance Company': 'dance-studio',
+  'Multidisciplinary Arts Center': 'multidisciplinary-arts-center',
+  'Community Center': 'community-center',
+  'Theatre': 'theatre',
+  'Video-Film Company': 'video-film-company',
+  'Art Center-Studio': 'art-center-studio',
+  'Cultural Arts Center': 'cultural-arts-center',
+  'Historical Society-Preservation Group': 'archive'
+};
 
-// Pick some predefined colors
-const artistColors = {};
-const availableColors = [
-  '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
-  '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
-  '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000'
+// Globals
+let allMarkers = [];
+const colorMap = {};
+const colorPalette = [
+  '#e6194b', '#3cb44b', '#ffe119', '#4363d8',
+  '#f58231', '#911eb4', '#46f0f0', '#f032e6',
+  '#bcf60c', '#fabebe', '#008080', '#e6beff'
 ];
 
-function getColorForArtist(artist) {
-  if (!artistColors[artist]) {
-    // Rotate through colors (fallback if we run out)
-    const color = availableColors[Object.keys(artistColors).length % availableColors.length];
-    artistColors[artist] = color;
+function getColorFor(tag) {
+  if (!colorMap[tag]) {
+    const index = Object.keys(colorMap).length % colorPalette.length;
+    colorMap[tag] = colorPalette[index];
   }
-  return artistColors[artist];
+  return colorMap[tag];
 }
 
+// Fetch data
+async function fetchData() {
+  const res = await fetch(`${AIRTABLE_URL}?view=Grid%20view&filterByFormula=Approved`, {
+    headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
+  });
 
-// ✅ Step 3: Add markers to the map
+  const json = await res.json();
+  const rawRecords = json.records.map(rec => ({ id: rec.id, ...rec.fields }));
 
-let allMarkers = []; // Declare this at the global level
+  const enrichedRecords = await Promise.all(
+    rawRecords.map(async (record) => {
+      const hasLatLng = parseFloat(record.Latitude) && parseFloat(record.Longitude);
+      return hasLatLng ? record : await geocodeAndSaveMissingCoords(record);
+    })
+  );
 
-const artistGroups = {}; // Artist name → list of markers
+  createMarkers(enrichedRecords.filter(Boolean));
+}
 
-function addMarkers(data) {
-  allMarkers.forEach(marker => marker.remove());
+// Geocode missing
+async function geocodeAndSaveMissingCoords(record) {
+  if (!record.Address) return null;
+
+  const query = encodeURIComponent(record.Address);
+  const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${mapboxgl.accessToken}`;
+
+  try {
+    const res = await fetch(geocodeUrl);
+    const json = await res.json();
+    if (!json.features.length) return null;
+
+    const [lng, lat] = json.features[0].center;
+
+    await fetch(`${AIRTABLE_URL}/${record.id}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ fields: { Latitude: lat, Longitude: lng } })
+    });
+
+    record.Latitude = lat;
+    record.Longitude = lng;
+    return record;
+  } catch (error) {
+    console.error('Geocoding failed:', record.Address, error);
+    return null;
+  }
+}
+
+// Create markers + build legend + build searchable directory
+function createMarkers(data) {
+  allMarkers.forEach(m => m.remove());
   allMarkers = [];
 
-  data.forEach(row => {
-    const lat = parseFloat(row.Latitude);
-const lng = parseFloat(row.Longitude);
-if (isNaN(lat) || isNaN(lng)) {
-  console.warn('Skipping row with bad coordinates:', row);
-  return;
-}
+  const tagGroups = {};
+  const groupedOptions = {};
 
-  
-    const artist = row.Name || 'Anonymous';
-    const markerColor = getColorForArtist(artist); // ✅ define color here
-  
-    const marker = new mapboxgl.Marker({ color: markerColor })
-    .setLngLat([lng, lat])
-      .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
-        <div style="max-width: 300px;">
-          <img src="${row.PhotoURL}" 
-               alt="User Photo" 
-               style="width:100%; max-height:250px; object-fit:cover; border-radius:8px;" />
-          <h3>${row.Name || 'Anonymous'}</h3>
-          <p><b>Age:</b> ${row.Age || 'N/A'}</p>
-          <p><b>Social Media:</b> ${row.Social || 'N/A'}</p>
-          <p><b>Photography Experience:</b> ${row.Experience || 'N/A'}</p>
-          <p><b>Description:</b> ${row.Description || 'N/A'}</p>
-        </div>
-      `))
+  data.forEach((row, index) => {
+    const lat = parseFloat(row.Latitude);
+    const lng = parseFloat(row.Longitude);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    const tags = (row.Tags || "").split(',').map(t => t.trim()).filter(Boolean);
+    const primaryTag = tags[0] || 'Uncategorized';
+    const iconKey = iconMap[primaryTag] || 'default';
+
+    const el = document.createElement('div');
+    el.style.backgroundImage = `url(icons/${iconKey}.png)`;
+    el.style.width = '32px';
+    el.style.height = '32px';
+    el.style.backgroundSize = 'contain';
+    el.style.backgroundRepeat = 'no-repeat';
+
+     // ✅ Add label here, where `row` is defined
+  const label = document.createElement('div');
+  label.className = 'marker-label';
+  label.innerText = row["Org Name"] || "Unnamed";
+  label.style.position = 'absolute';
+  label.style.top = '36px';
+  label.style.left = '50%';
+  label.style.transform = 'translateX(-50%)';
+  label.style.whiteSpace = 'nowrap';
+  label.style.backgroundColor = 'rgba(255,255,255,0.8)';
+  label.style.padding = '2px 6px';
+  label.style.borderRadius = '4px';
+  label.style.fontSize = '12px';
+  label.style.display = 'none';
+
+  el.appendChild(label);
+
+    const imageUrl = Array.isArray(row.Image) && row.Image.length > 0 ? row.Image[0].url : '';
+
+    const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
+      <div style="max-width: 250px;">
+        ${imageUrl ? `<img src="${imageUrl}" alt="${row["Org Name"]}" style="width: 100%; margin-bottom: 10px;">` : ''}
+        <h3>${row["Org Name"] || "Untitled"}</h3>
+        ${row.Description ? `<p>${row.Description}</p>` : ''}
+        ${row.Address ? `<p><b>Address:</b><br>${row.Address}</p>` : ''}
+        ${row.Email ? `<p><b>Email:</b> <a href="mailto:${row.Email}">${row.Email}</a></p>` : ''}
+        ${row.Website ? `<p><a href="${row.Website}" target="_blank">Website</a></p>` : ''}
+        ${row.Social ? `<p><a href="${row.Social}" target="_blank">Social</a></p>` : ''}
+      </div>
+    `);
+
+    const marker = new mapboxgl.Marker(el)
+      .setLngLat([lng, lat])
+      .setPopup(popup)
       .addTo(map);
-  
+
+    marker.labelElement = label; // ✅ Store for zoom visibility toggling
     marker.rowData = row;
     allMarkers.push(marker);
-  
-    if (!artistGroups[artist]) {
-      artistGroups[artist] = [];
+
+    // Group by tag
+    tags.forEach(tag => {
+      if (!tagGroups[tag]) tagGroups[tag] = [];
+      tagGroups[tag].push(marker);
+    });
+
+    // Grouped select dropdown
+    if (!groupedOptions[primaryTag]) groupedOptions[primaryTag] = [];
+    groupedOptions[primaryTag].push({ label: row["Org Name"] || "Unnamed", index });
+  });
+
+  buildLegend(tagGroups);
+}
+
+map.on('zoom', () => {
+  const zoomLevel = map.getZoom();
+  allMarkers.forEach(marker => {
+    if (marker.labelElement) {
+      marker.labelElement.style.display = zoomLevel >= 14 ? 'block' : 'none';
     }
-  
-    artistGroups[artist].push(marker);
   });
-  
+});
 
-  buildLegend();
-}
 
-// Add Legend
+document.getElementById('search-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const query = e.target.value.trim().toLowerCase();
+    const resultsContainer = document.getElementById('search-results');
+    resultsContainer.innerHTML = ''; // Clear old results
 
-function buildLegend() {
-  const legendContainer = document.getElementById('legend');
-  legendContainer.innerHTML = ''; // Clear existing
+    if (!query) return;
 
-  Object.keys(artistGroups).forEach(artist => {
-    const color = getColorForArtist(artist);
+    const matches = allMarkers.filter(marker => {
+      const name = (marker.rowData["Org Name"] || "").toLowerCase();
+      const tags = (marker.rowData.Tags || "").toLowerCase();
+      return name.includes(query) || tags.includes(query);
+    });
 
-    const item = document.createElement('label');
-    item.className = 'legend-item';
-    item.style.display = 'flex';
-    item.style.alignItems = 'center';
-    item.style.gap = '8px';
-    item.style.marginBottom = '5px';
+    if (matches.length === 0) {
+      resultsContainer.innerHTML = '<p>No matches found.</p>';
+      return;
+    }
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = true;
+    // Optional: Zoom to first match
+    const first = matches[0];
+    map.flyTo({ center: first.getLngLat(), zoom: 14, essential: true });
+    first.togglePopup();
 
-    checkbox.onchange = () => {
-      const visible = checkbox.checked;
+    // Show results
+    const list = document.createElement('ul');
+    list.style.padding = '0';
+    list.style.listStyle = 'none';
 
-      artistGroups[artist].forEach(marker => {
-        marker.getElement().style.display = visible ? 'block' : 'none';
+    matches.forEach(marker => {
+      const li = document.createElement('li');
+      li.style.marginBottom = '6px';
+
+      const link = document.createElement('a');
+      link.href = '#';
+      link.textContent = marker.rowData["Org Name"] || "Unnamed";
+      link.style.textDecoration = 'underline';
+      link.style.color = '#007bff';
+      link.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        map.flyTo({ center: marker.getLngLat(), zoom: 15, essential: true });
+        marker.togglePopup();
       });
-    };
 
-    const swatch = document.createElement('span');
-    swatch.style.backgroundColor = color;
-    swatch.style.width = '16px';
-    swatch.style.height = '16px';
-    swatch.style.borderRadius = '50%';
-    swatch.style.display = 'inline-block';
+      li.appendChild(link);
+      list.appendChild(li);
+    });
 
-    const nameText = document.createElement('span');
-    nameText.textContent = artist;
+    resultsContainer.appendChild(list);
+  }
+});
 
-    item.appendChild(checkbox);
-    item.appendChild(swatch);
-    item.appendChild(nameText);
+document.getElementById('search-input').addEventListener('input', (e) => {
+  const query = e.target.value.trim().toLowerCase();
+  const resultsContainer = document.getElementById('search-results');
+  resultsContainer.innerHTML = ''; // Clear previous results
 
-    legendContainer.appendChild(item);
+  if (!query) return;
+
+  const matches = allMarkers.filter(marker => {
+    const name = (marker.rowData["Org Name"] || "").toLowerCase();
+    const tags = (marker.rowData.Tags || "").toLowerCase();
+    return name.includes(query) || tags.includes(query);
   });
+
+  if (matches.length === 0) {
+    resultsContainer.innerHTML = '<p>No matches found.</p>';
+    return;
+  }
+
+  const list = document.createElement('ul');
+  list.style.padding = '0';
+  list.style.listStyle = 'none';
+
+  matches.forEach(marker => {
+    const li = document.createElement('li');
+    li.style.marginBottom = '6px';
+
+    const link = document.createElement('a');
+    link.href = '#';
+    link.textContent = marker.rowData["Org Name"] || "Unnamed";
+    link.style.textDecoration = 'underline';
+    link.style.color = '#007bff';
+
+    link.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      map.flyTo({ center: marker.getLngLat(), zoom: 15, essential: true });
+      marker.togglePopup();
+    });
+
+    li.appendChild(link);
+    list.appendChild(li);
+  });
+
+  resultsContainer.appendChild(list);
+});
+
+
+
+document.getElementById('search-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const query = e.target.value.trim().toLowerCase();
+    if (!query) return;
+
+    const match = allMarkers.find(marker => {
+      const name = (marker.rowData["Org Name"] || "").toLowerCase();
+      const tags = (marker.rowData.Tags || "").toLowerCase();
+      return name.includes(query) || tags.includes(query);
+    });
+
+    if (match) {
+      map.flyTo({ center: match.getLngLat(), zoom: 15, essential: true });
+      match.togglePopup(); // ensure popup is toggled open
+    } else {
+      alert("No matching organization or tag found.");
+    }
+  }
+});
+
+
+function buildLegend(tagGroups) {
+  const container = document.getElementById('legend-content');
+  container.innerHTML = '';
+
+  Object.entries(tagGroups)
+    .sort(([a], [b]) => a.localeCompare(b)) // Alphabetize tags
+    .forEach(([tag, markers]) => {
+      const iconKey = iconMap[tag] || 'default';
+
+      const section = document.createElement('div');
+      section.className = 'legend-category';
+
+      const header = document.createElement('h4');
+      header.innerHTML = `<span class="arrow">▾</span> ${tag}`;
+      header.style.cursor = 'pointer';
+
+      // Create org list and expand it by default
+      const list = document.createElement('ul');
+      list.className = 'legend-org-list';
+      list.style.display = 'block'; // Initially expanded
+
+// Sort markers alphabetically by organization name
+markers.sort((a, b) => {
+  const nameA = (a.rowData["Org Name"] || "").toLowerCase();
+  const nameB = (b.rowData["Org Name"] || "").toLowerCase();
+  return nameA.localeCompare(nameB);
+});
+
+      // Create each marker entry under this tag
+      markers.forEach(marker => {
+        const li = document.createElement('li');
+
+        const icon = document.createElement('img');
+        icon.src = `icons/${iconKey}.png`;
+        icon.alt = `${tag} icon`;
+        icon.style.width = '20px';
+        icon.style.height = '20px';
+        icon.style.marginRight = '6px';
+        icon.style.verticalAlign = 'middle';
+
+        const label = document.createElement('span');
+        label.textContent = marker.rowData["Org Name"] || "Unnamed";
+        label.style.cursor = 'pointer';
+        label.style.textDecoration = 'underline';
+
+        label.addEventListener('click', () => {
+          map.flyTo({ center: marker.getLngLat(), zoom: 15, essential: true });
+          marker.togglePopup();
+        });
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = true;
+        checkbox.addEventListener('change', () => {
+          marker.getElement().style.display = checkbox.checked ? 'block' : 'none';
+        });
+
+        li.appendChild(checkbox);
+        li.appendChild(icon);
+        li.appendChild(label);
+        list.appendChild(li);
+      });
+
+      // Toggle visibility and marker display
+      header.addEventListener('click', () => {
+        const collapsed = list.style.display === 'none';
+        list.style.display = collapsed ? 'block' : 'none';
+        header.querySelector('.arrow').textContent = collapsed ? '▾' : '▸';
+
+        // Show/hide all markers in this tag group
+        markers.forEach(marker => {
+          marker.getElement().style.display = collapsed ? 'block' : 'none';
+        });
+      });
+
+      section.appendChild(header);
+      section.appendChild(list);
+      container.appendChild(section);
+    });
 }
 
+document.getElementById('reset-legend').addEventListener('click', () => {
+  // Check all checkboxes
+  document.querySelectorAll('.legend-org-list input[type="checkbox"]').forEach(checkbox => {
+    checkbox.checked = true;
+  });
+
+  // Show all markers
+  allMarkers.forEach(marker => {
+    marker.getElement().style.display = 'block';
+  });
+});
 
 
-// ✅ Step 4: Start fetching data
-map.on('load', fetchData);
+// Map load
+
+
+map.on('load', () => {
+    // Show info box by default when map loads
+    document.getElementById('map-guide-overlay').style.visibility = 'visible';
+
+  Object.values(iconMap).forEach(iconName => {
+    map.loadImage(`icons/${iconName}.png`, (error, image) => {
+      if (error) {
+        console.warn(`Could not load icon "${iconName}":`, error);
+      } else if (!map.hasImage(iconName)) {
+        map.addImage(iconName, image);
+      }
+    });
+  });
+
+  fetchData();
+
+  map.addSource('subway-lines', {
+    type: 'geojson',
+    data: 'nyc-subway-routes.geojson'
+  });
+
+  map.addLayer({
+    id: 'subway-lines-layer',
+    type: 'line',
+    source: 'subway-lines',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-width': 2,
+      'line-color': [
+        'match',
+        ['get', 'rt_symbol'],
+        '1', '#EE352E', '2', '#EE352E', '3', '#EE352E',
+        '4', '#00933C', '5', '#00933C', '6', '#00933C',
+        'A', '#2850AD', 'C', '#2850AD', 'E', '#2850AD',
+        'B', '#FF6319', 'D', '#FF6319', 'F', '#FF6319', 'M', '#FF6319',
+        'N', '#FCCC0A', 'Q', '#FCCC0A', 'R', '#FCCC0A', 'W', '#FCCC0A',
+        'L', '#A7A9AC', 'G', '#6CBE45', 'J', '#996633', 'Z', '#996633',
+        '7', '#B933AD',
+        '#000000'
+      ]
+    }
+  });
+
+  map.addSource('subway-stops', {
+    type: 'geojson',
+    data: 'nyc-subway-stops.geojson'
+  });
+
+  map.addLayer({
+    id: 'subway-stations-stops',
+    type: 'circle',
+    source: 'subway-stops',
+    paint: {
+      'circle-radius': 1,
+      'circle-color': '#ffffff',
+      'circle-stroke-width': 1,
+      'circle-stroke-color': '#000000'
+    }
+  });
+});
+
+// UI toggle logic
+map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
+
+// Hide by default
+document.getElementById('map-guide-overlay').style.display = 'none';
+
+// When intro is closed, show the info box
+document.getElementById('close-intro').addEventListener('click', () => {
+  document.getElementById('intro-overlay').style.display = 'none';
+  document.getElementById('map-guide-overlay').style.display = 'flex';
+});
+
+
+const intro = document.getElementById('intro-overlay');
+intro.addEventListener('touchmove', (e) => {
+  if (intro.scrollTop > 100) {
+    intro.style.display = 'none';
+  }
+});
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const legendPanel = document.getElementById('legend-panel');
+const legendToggle = document.getElementById('legend-toggle');
+
+legendToggle.addEventListener('click', () => {
+  legendPanel.classList.toggle('collapsed');
+  legendToggle.textContent = legendPanel.classList.contains('collapsed') ? 'Show' : 'Hide';
+});
+})
+
+document.addEventListener('DOMContentLoaded', () => {
+  const mapGuideOverlay = document.getElementById('map-guide-overlay');
+  const mapGuideClose = document.getElementById('map-guide-close');
+  const infoButton = document.getElementById('info-button');
+
+  // Open
+  if (infoButton) {
+    infoButton.addEventListener('click', () => {
+      mapGuideOverlay.style.display = 'flex';
+    });
+  }
+
+  // Close
+  if (mapGuideClose) {
+    mapGuideClose.addEventListener('click', () => {
+      mapGuideOverlay.style.display = 'none';
+    });
+  }
+});
+
+
+const legendPanel = document.getElementById('legend-panel');
+const legendHeader = legendPanel.querySelector('.legend-header');
+
+legendHeader.addEventListener('click', () => {
+  legendPanel.classList.toggle('expanded');
+});
+
+document.addEventListener('click', (e) => {
+  const legendPanel = document.getElementById('legend-panel');
+  if (legendPanel.classList.contains('expanded') && !legendPanel.contains(e.target)) {
+    legendPanel.classList.remove('expanded');
+  }
+});
