@@ -10,43 +10,12 @@ const map = new mapboxgl.Map({
 
 
 // Airtable Setup
-const AIRTABLE_API_KEY = 'patboskAQTJUi9FlQ.1c30c3c632cd4d7bd03cf949e50edd922425aba8dcbf0c8a6002e98db67c74a3';
-const BASE_ID = 'apppBx0a9hj0Z1ciw';
-const TABLE_NAME = 'tblgqyoE5TZUzQDKw';
+const AIRTABLE_API_KEY = 'patqigUJTp4x0eHMj.aa9a269d3feac521966920e2a927b43598703dbf7d7d11c67a15ac708c6b5a77';
+const BASE_ID = 'appeZ9qxsOgKiYPaJ';
+const TABLE_NAME = 'tblHguVMJF1GNv56H';
 const AIRTABLE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
-// Icon mapping for tags
-const iconMap = {
-  'Community Garden': 'community-garden',
-  'Gallery': 'gallery',
-  'Museum/Cultural Institution': 'museum',
-  'Music Group/Vocal Ensembles': 'music-group-vocal-ensemble',
-  'Dance Company': 'dance-studio',
-  'Multidisciplinary Arts Center': 'multidisciplinary-arts-center',
-  'Community Center': 'community-center',
-  'Theatre': 'theatre',
-  'Video-Film Company': 'video-film-company',
-  'Art Center-Studio': 'art-center-studio',
-  'Cultural Arts Center': 'cultural-arts-center',
-  'Historical Society-Preservation Group': 'archive'
-};
 
-// Globals
-let allMarkers = [];
-const colorMap = {};
-const colorPalette = [
-  '#e6194b', '#3cb44b', '#ffe119', '#4363d8',
-  '#f58231', '#911eb4', '#46f0f0', '#f032e6',
-  '#bcf60c', '#fabebe', '#008080', '#e6beff'
-];
-
-function getColorFor(tag) {
-  if (!colorMap[tag]) {
-    const index = Object.keys(colorMap).length % colorPalette.length;
-    colorMap[tag] = colorPalette[index];
-  }
-  return colorMap[tag];
-}
 
 // Fetch data
 async function fetchData() {
@@ -100,9 +69,33 @@ async function geocodeAndSaveMissingCoords(record) {
 }
 
 // Create markers + build legend + build searchable directory
+// Utility: white → black gradient
+function getGradientColor(index, total) {
+  const t = total > 1 ? index / (total - 1) : 0; // 0 → 1
+  const shade = Math.round(255 * (1 - t));       // 255=white, 0=black
+  return `rgb(${shade},${shade},${shade})`;
+}
+
+function assignStableGradientColors(names) {
+  const sorted = [...names].sort((a, b) => a.localeCompare(b));
+  const map = {};
+  sorted.forEach((name, i) => {
+    map[name] = getGradientColor(i, sorted.length);
+  });
+  return map;
+}
+
+
 function createMarkers(data) {
   allMarkers.forEach(m => m.remove());
   allMarkers = [];
+
+  // Use "Name" field as category
+  const uniqueNames = [...new Set(data.map(row => row.Name).filter(Boolean))];
+  const colorMap = assignStableGradientColors(uniqueNames);
+  uniqueNames.forEach((name, i) => {
+    colorMap[name] = getGradientColor(i, uniqueNames.length);
+  });
 
   const tagGroups = {};
   const groupedOptions = {};
@@ -112,45 +105,41 @@ function createMarkers(data) {
     const lng = parseFloat(row.Longitude);
     if (isNaN(lat) || isNaN(lng)) return;
 
-    const tags = (row.Tags || "").split(',').map(t => t.trim()).filter(Boolean);
-    const primaryTag = tags[0] || 'Uncategorized';
-    const iconKey = iconMap[primaryTag] || 'default';
+    const category = row.Name || "Uncategorized";
+    const color = colorMap[category] || "#000";
 
+    // Create a circular colored marker
     const el = document.createElement('div');
-    el.style.backgroundImage = `url(icons/${iconKey}.png)`;
-    el.style.width = '32px';
-    el.style.height = '32px';
-    el.style.backgroundSize = 'contain';
-    el.style.backgroundRepeat = 'no-repeat';
+    el.style.width = '20px';
+    el.style.height = '20px';
+    el.style.borderRadius = '50%';
+    el.style.backgroundColor = color;
+    el.style.border = '2px solid #fff';
+    el.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)';
+    el.style.cursor = 'pointer';
 
-     // ✅ Add label here, where `row` is defined
-  const label = document.createElement('div');
-  label.className = 'marker-label';
-  label.innerText = row["Org Name"] || "Unnamed";
-  label.style.position = 'absolute';
-  label.style.top = '36px';
-  label.style.left = '50%';
-  label.style.transform = 'translateX(-50%)';
-  label.style.whiteSpace = 'nowrap';
-  label.style.backgroundColor = 'rgba(255,255,255,0.8)';
-  label.style.padding = '2px 6px';
-  label.style.borderRadius = '4px';
-  label.style.fontSize = '12px';
-  label.style.display = 'none';
+    // Label on hover / zoom
+    const label = document.createElement('div');
+    label.className = 'marker-label';
+    label.innerText = row["Org Name"] || category;
+    label.style.position = 'absolute';
+    label.style.top = '24px';
+    label.style.left = '50%';
+    label.style.transform = 'translateX(-50%)';
+    label.style.whiteSpace = 'nowrap';
+    label.style.backgroundColor = 'rgba(255,255,255,0.8)';
+    label.style.padding = '2px 6px';
+    label.style.borderRadius = '4px';
+    label.style.fontSize = '12px';
+    label.style.display = 'none';
 
-  el.appendChild(label);
-
-    const imageUrl = Array.isArray(row.Image) && row.Image.length > 0 ? row.Image[0].url : '';
+    el.appendChild(label);
 
     const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
       <div style="max-width: 250px;">
-        ${imageUrl ? `<img src="${imageUrl}" alt="${row["Org Name"]}" style="width: 100%; margin-bottom: 10px;">` : ''}
-        <h3>${row["Org Name"] || "Untitled"}</h3>
+        <h3>${row["Org Name"] || category}</h3>
         ${row.Description ? `<p>${row.Description}</p>` : ''}
         ${row.Address ? `<p><b>Address:</b><br>${row.Address}</p>` : ''}
-        ${row.Email ? `<p><b>Email:</b> <a href="mailto:${row.Email}">${row.Email}</a></p>` : ''}
-        ${row.Website ? `<p><a href="${row.Website}" target="_blank">Website</a></p>` : ''}
-        ${row.Social ? `<p><a href="${row.Social}" target="_blank">Social</a></p>` : ''}
       </div>
     `);
 
@@ -159,22 +148,19 @@ function createMarkers(data) {
       .setPopup(popup)
       .addTo(map);
 
-    marker.labelElement = label; // ✅ Store for zoom visibility toggling
+    marker.labelElement = label;
     marker.rowData = row;
     allMarkers.push(marker);
 
-    // Group by tag
-    tags.forEach(tag => {
-      if (!tagGroups[tag]) tagGroups[tag] = [];
-      tagGroups[tag].push(marker);
-    });
+    // Group markers by Name
+    if (!tagGroups[category]) tagGroups[category] = [];
+    tagGroups[category].push(marker);
 
-    // Grouped select dropdown
-    if (!groupedOptions[primaryTag]) groupedOptions[primaryTag] = [];
-    groupedOptions[primaryTag].push({ label: row["Org Name"] || "Unnamed", index });
+    if (!groupedOptions[category]) groupedOptions[category] = [];
+    groupedOptions[category].push({ label: row["Org Name"] || category, index });
   });
 
-  buildLegend(tagGroups);
+  buildLegend(tagGroups, colorMap);
 }
 
 map.on('zoom', () => {
@@ -286,36 +272,15 @@ document.getElementById('search-input').addEventListener('input', (e) => {
 
 
 
-document.getElementById('search-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    const query = e.target.value.trim().toLowerCase();
-    if (!query) return;
-
-    const match = allMarkers.find(marker => {
-      const name = (marker.rowData["Org Name"] || "").toLowerCase();
-      const tags = (marker.rowData.Tags || "").toLowerCase();
-      return name.includes(query) || tags.includes(query);
-    });
-
-    if (match) {
-      map.flyTo({ center: match.getLngLat(), zoom: 15, essential: true });
-      match.togglePopup(); // ensure popup is toggled open
-    } else {
-      alert("No matching organization or tag found.");
-    }
-  }
-});
 
 
-function buildLegend(tagGroups) {
+function buildLegend(tagGroups, colorMap) {
   const container = document.getElementById('legend-content');
   container.innerHTML = '';
 
   Object.entries(tagGroups)
-    .sort(([a], [b]) => a.localeCompare(b)) // Alphabetize tags
+    .sort(([a], [b]) => a.localeCompare(b))
     .forEach(([tag, markers]) => {
-      const iconKey = iconMap[tag] || 'default';
-
       const section = document.createElement('div');
       section.className = 'legend-category';
 
@@ -323,29 +288,25 @@ function buildLegend(tagGroups) {
       header.innerHTML = `<span class="arrow">▾</span> ${tag}`;
       header.style.cursor = 'pointer';
 
-      // Create org list and expand it by default
       const list = document.createElement('ul');
       list.className = 'legend-org-list';
-      list.style.display = 'block'; // Initially expanded
+      list.style.display = 'block';
 
-// Sort markers alphabetically by organization name
-markers.sort((a, b) => {
-  const nameA = (a.rowData["Org Name"] || "").toLowerCase();
-  const nameB = (b.rowData["Org Name"] || "").toLowerCase();
-  return nameA.localeCompare(nameB);
-});
+      markers.sort((a, b) => {
+        const nameA = (a.rowData["Org Name"] || "").toLowerCase();
+        const nameB = (b.rowData["Org Name"] || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
 
-      // Create each marker entry under this tag
       markers.forEach(marker => {
         const li = document.createElement('li');
 
-        const icon = document.createElement('img');
-        icon.src = `icons/${iconKey}.png`;
-        icon.alt = `${tag} icon`;
-        icon.style.width = '20px';
-        icon.style.height = '20px';
-        icon.style.marginRight = '6px';
-        icon.style.verticalAlign = 'middle';
+        const swatch = document.createElement('span');
+        swatch.style.display = 'inline-block';
+        swatch.style.width = '16px';
+        swatch.style.height = '16px';
+        swatch.style.marginRight = '6px';
+        swatch.style.backgroundColor = colorMap[tag] || '#000';
 
         const label = document.createElement('span');
         label.textContent = marker.rowData["Org Name"] || "Unnamed";
@@ -365,18 +326,16 @@ markers.sort((a, b) => {
         });
 
         li.appendChild(checkbox);
-        li.appendChild(icon);
+        li.appendChild(swatch);
         li.appendChild(label);
         list.appendChild(li);
       });
 
-      // Toggle visibility and marker display
       header.addEventListener('click', () => {
         const collapsed = list.style.display === 'none';
         list.style.display = collapsed ? 'block' : 'none';
         header.querySelector('.arrow').textContent = collapsed ? '▾' : '▸';
 
-        // Show/hide all markers in this tag group
         markers.forEach(marker => {
           marker.getElement().style.display = collapsed ? 'block' : 'none';
         });
@@ -387,6 +346,7 @@ markers.sort((a, b) => {
       container.appendChild(section);
     });
 }
+
 
 document.getElementById('reset-legend').addEventListener('click', () => {
   // Check all checkboxes
@@ -530,4 +490,4 @@ document.addEventListener('click', (e) => {
   if (legendPanel.classList.contains('expanded') && !legendPanel.contains(e.target)) {
     legendPanel.classList.remove('expanded');
   }
-});
+}); 
