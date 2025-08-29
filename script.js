@@ -1,9 +1,9 @@
 // Mapbox Setup
 
-mapboxgl.accessToken = 'pk.eyJ1IjoiZmx1c2hpbmd0b3duaGFsbCIsImEiOiJjbWRmZHFxb2EwY2p3MmlxM3JoMmJwNDVrIn0.KDnT79yQuUeYVaqcKlmQGQ';
+mapboxgl.accessToken = 'pkpk.eyJ1Ijoibm9sZW5waHlhIiwiYSI6ImNtOGk3bXB1MzBhM2Qyc292ZjZrZ2tjMHMifQ.ZItrPCguE2g3w99InSdzLQ';
 const map = new mapboxgl.Map({
   container: 'map',
- style: 'mapbox://styles/mapbox/light-v11',
+ style: 'mapbox://styles/nolenphya/cm8hobpgo00u101s5d3ebdjdz',
   center: [-73.94, 40.73],
   zoom: 11
 });
