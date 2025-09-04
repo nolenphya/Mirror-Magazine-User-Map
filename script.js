@@ -121,7 +121,7 @@ function createMarkers(data) {
     // Label on hover / zoom
     const label = document.createElement('div');
     label.className = 'marker-label';
-    label.innerText = row["Org Name"] || category;
+    label.innerText = row["Name"] || category;
     label.style.position = 'absolute';
     label.style.top = '24px';
     label.style.left = '50%';
@@ -137,7 +137,7 @@ function createMarkers(data) {
 
     const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
       <div style="max-width: 250px;">
-        <h3>${row["Org Name"] || category}</h3>
+        <h3>${row["Name"] || category}</h3>
         ${row.Description ? `<p>${row.Description}</p>` : ''}
         ${row.Address ? `<p><b>Address:</b><br>${row.Address}</p>` : ''}
       </div>
@@ -157,7 +157,7 @@ function createMarkers(data) {
     tagGroups[category].push(marker);
 
     if (!groupedOptions[category]) groupedOptions[category] = [];
-    groupedOptions[category].push({ label: row["Org Name"] || category, index });
+    groupedOptions[category].push({ label: row["Name"] || category, index });
   });
 
   buildLegend(tagGroups, colorMap);
@@ -182,7 +182,7 @@ document.getElementById('search-input').addEventListener('keydown', (e) => {
     if (!query) return;
 
     const matches = allMarkers.filter(marker => {
-      const name = (marker.rowData["Org Name"] || "").toLowerCase();
+      const name = (marker.rowData["Name"] || "").toLowerCase();
       const tags = (marker.rowData.Tags || "").toLowerCase();
       return name.includes(query) || tags.includes(query);
     });
@@ -208,7 +208,7 @@ document.getElementById('search-input').addEventListener('keydown', (e) => {
 
       const link = document.createElement('a');
       link.href = '#';
-      link.textContent = marker.rowData["Org Name"] || "Unnamed";
+      link.textContent = marker.rowData["Name"] || "Unnamed";
       link.style.textDecoration = 'underline';
       link.style.color = '#007bff';
       link.addEventListener('click', (ev) => {
@@ -233,7 +233,7 @@ document.getElementById('search-input').addEventListener('input', (e) => {
   if (!query) return;
 
   const matches = allMarkers.filter(marker => {
-    const name = (marker.rowData["Org Name"] || "").toLowerCase();
+    const name = (marker.rowData["Name"] || "").toLowerCase();
     const tags = (marker.rowData.Tags || "").toLowerCase();
     return name.includes(query) || tags.includes(query);
   });
@@ -253,7 +253,7 @@ document.getElementById('search-input').addEventListener('input', (e) => {
 
     const link = document.createElement('a');
     link.href = '#';
-    link.textContent = marker.rowData["Org Name"] || "Unnamed";
+    link.textContent = marker.rowData["Name"] || "Unnamed";
     link.style.textDecoration = 'underline';
     link.style.color = '#007bff';
 
@@ -293,8 +293,8 @@ function buildLegend(tagGroups, colorMap) {
       list.style.display = 'block';
 
       markers.sort((a, b) => {
-        const nameA = (a.rowData["Org Name"] || "").toLowerCase();
-        const nameB = (b.rowData["Org Name"] || "").toLowerCase();
+        const nameA = (a.rowData["Name"] || "").toLowerCase();
+        const nameB = (b.rowData["Name"] || "").toLowerCase();
         return nameA.localeCompare(nameB);
       });
 
@@ -309,7 +309,7 @@ function buildLegend(tagGroups, colorMap) {
         swatch.style.backgroundColor = colorMap[tag] || '#000';
 
         const label = document.createElement('span');
-        label.textContent = marker.rowData["Org Name"] || "Unnamed";
+        label.textContent = marker.rowData["Name"] || "Unnamed";
         label.style.cursor = 'pointer';
         label.style.textDecoration = 'underline';
 
