@@ -43,22 +43,34 @@ function assignStableGradientColors(names) {
 // Data Fetching
 // =======================
 async function fetchData() {
-  const res = await fetch(`${AIRTABLE_URL}?view=Grid%20view&filterByFormula=Approved%3DTRUE()`, {
-    headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
-  });
+  const AIRTABLE_URL = "https://api.airtable.com/v0/YOUR_BASE_ID/YOUR_TABLE_NAME";
+  const AIRTABLE_API_KEY = "YOUR_API_KEY";
 
-  const json = await res.json();
-  const rawRecords = json.records.map(rec => ({ id: rec.id, ...rec.fields }));
+  // Use filterByFormula correctly - adjust the formula for your actual field name
+  const filterFormula = encodeURIComponent("Approved=TRUE()"); 
+  const viewName = encodeURIComponent("Grid view");
+  const url = `${AIRTABLE_URL}?view=${viewName}&filterByFormula=${filterFormula}`;
 
-  const enrichedRecords = await Promise.all(
-    rawRecords.map(async record => {
-      const hasLatLng = parseFloat(record.Latitude) && parseFloat(record.Longitude);
-      return hasLatLng ? record : await geocodeAndSaveMissingCoords(record);
-    })
-  );
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
+    });
 
-  createMarkers(enrichedRecords.filter(Boolean));
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Airtable Error (${res.status}):`, errorText);
+      return [];
+    }
+
+    const data = await res.json();
+    return data.records || [];
+
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    return [];
+  }
 }
+
 
 async function geocodeAndSaveMissingCoords(record) {
   if (!record.Address) return null;
