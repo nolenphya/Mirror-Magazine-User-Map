@@ -43,7 +43,7 @@ function assignStableGradientColors(names) {
 // Data Fetching
 // =======================
 async function fetchData() {
-  const res = await fetch(`${AIRTABLE_URL}?view=Grid%20view&filterByFormula=Approved`, {
+  const res = await fetch(`${AIRTABLE_URL}?view=Grid%20view&filterByFormula=Approved%3DTRUE()`, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
   });
 
