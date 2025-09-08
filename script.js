@@ -18,7 +18,7 @@ const iconMap = {}; // Add your custom icon mapping if needed
 // =======================
 const AIRTABLE_API_KEY = 'patsJ1rBKasjE6bSA.85dddd2552b8c0809bdad2f53e347e704b53ffa963435daa9bfc93d4c1adcb14';
 const BASE_ID = 'appeZ9qxsOgKiYPaJ';
-const TABLE_NAME = 'tblHguVMJF1GNv56H';
+const TABLE_NAME = encodeURIComponent('Mirror Magazine IBX Project');
 const AIRTABLE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
 // =======================
@@ -47,9 +47,11 @@ async function fetchData() {
   const AIRTABLE_API_KEY = "YOUR_API_KEY";
 
   // Use filterByFormula correctly - adjust the formula for your actual field name
-  const filterFormula = encodeURIComponent("{Approved}=TRUE()"); 
-  const viewName = encodeURIComponent("Grid view");
-  const url = `${AIRTABLE_URL}?view=${viewName}&filterByFormula=${filterFormula}`;
+ const filterFormula = encodeURIComponent("{Approved}=TRUE()");
+  const viewName = encodeURIComponent("main");
+
+  const AIRTABLE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?view=${viewName}&filterByFormula=${filterFormula}`;
+
 
   try {
     const res = await fetch(url, {
