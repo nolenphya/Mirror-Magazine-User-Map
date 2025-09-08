@@ -43,8 +43,6 @@ function assignStableGradientColors(names) {
 // Data Fetching
 // =======================
 async function fetchData() {
-  const AIRTABLE_URL = "https://api.airtable.com/v0/YOUR_BASE_ID/YOUR_TABLE_NAME";
-  const AIRTABLE_API_KEY = "YOUR_API_KEY";
 
   // Use filterByFormula correctly - adjust the formula for your actual field name
  const filterFormula = encodeURIComponent("{Approved}=TRUE()");
