@@ -43,16 +43,14 @@ function assignStableGradientColors(names) {
 // Data Fetching
 // =======================
 async function fetchData() {
-
-  // Use filterByFormula correctly - adjust the formula for your actual field name
- const filterFormula = encodeURIComponent("{Approved}=TRUE()");
+  const filterFormula = encodeURIComponent("{Approved}=TRUE()");
   const viewName = encodeURIComponent("main");
 
-  const AIRTABLE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?view=${viewName}&filterByFormula=${filterFormula}`;
-
+  // Use a new variable name here
+  const fetchUrl = `${AIRTABLE_URL}?view=${viewName}&filterByFormula=${filterFormula}`;
 
   try {
-    const res = await fetch(url, {
+    const res = await fetch(fetchUrl, {
       headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
     });
 
@@ -70,6 +68,7 @@ async function fetchData() {
     return [];
   }
 }
+
 
 
 async function geocodeAndSaveMissingCoords(record) {
