@@ -18,7 +18,7 @@ const iconMap = {}; // Add your custom icon mapping if needed
 // =======================
 const AIRTABLE_API_KEY = 'patsJ1rBKasjE6bSA.85dddd2552b8c0809bdad2f53e347e704b53ffa963435daa9bfc93d4c1adcb14';
 const BASE_ID = 'appeZ9qxsOgKiYPaJ';
-const TABLE_NAME = encodeURIComponent('main'); 
+const TABLE_NAME = 'tblHguVMJF1GNv56H';
 const AIRTABLE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`;
 
 // =======================
