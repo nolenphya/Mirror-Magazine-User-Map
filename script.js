@@ -1,7 +1,7 @@
 // =======================
 // Mapbox Setup
 // =======================
-mapboxgl.accessToken = 'pk.eyJ1Ijoibm9sZW5waHlhIiwiYSI6ImNtOGk3bXB1MzBhM2Qyc292ZjZrZ2tjMHMifQ.ZItrPCguE2g3w99InSdzLQ';
+mapboxgl.accessToken = 'sk.eyJ1Ijoibm9sZW5waHlhIiwiYSI6ImNtZmJ3eGI0ZDE3OXoya3EybzQzbDNrcGYifQ.rsxzTnU_-UDseU0BlTe0JQ';
 const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/nolenphya/cm8hobpgo00u101s5d3ebdjdz',
