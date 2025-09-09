@@ -1,4 +1,3 @@
-
 // =======================
 // Mapbox Setup
 // =======================
@@ -12,7 +11,7 @@ const map = new mapboxgl.Map({
 
 // Global vars
 let allMarkers = [];
-const iconMap = {}; // Add your custom icon mapping if needed
+const iconMap = {}; // Add custom icons here if needed
 
 // =======================
 // Airtable Setup
@@ -46,8 +45,6 @@ function assignStableGradientColors(names) {
 async function fetchData() {
   const filterFormula = encodeURIComponent("{Approved}=TRUE()");
   const viewName = encodeURIComponent("main");
-
-  // Use a new variable name here
   const fetchUrl = `${AIRTABLE_URL}?view=${viewName}&filterByFormula=${filterFormula}`;
 
   try {
@@ -56,8 +53,7 @@ async function fetchData() {
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`Airtable Error (${res.status}):`, errorText);
+      console.error(`Airtable Error (${res.status}):`, await res.text());
       return [];
     }
 
@@ -70,10 +66,8 @@ async function fetchData() {
   }
 }
 
-
-
-async function geocodeAndSaveMissingCoords(record) {
-  if (!record.Address) return null;
+async function geocodeIfMissing(record) {
+  if (!record.Address || (record.Latitude && record.Longitude)) return record;
 
   const query = encodeURIComponent(record.Address);
   const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${mapboxgl.accessToken}`;
@@ -81,10 +75,13 @@ async function geocodeAndSaveMissingCoords(record) {
   try {
     const res = await fetch(geocodeUrl);
     const json = await res.json();
-    if (!json.features.length) return null;
+    if (!json.features.length) return record;
 
     const [lng, lat] = json.features[0].center;
+    record.Latitude = lat;
+    record.Longitude = lng;
 
+    // Save back to Airtable
     await fetch(`${AIRTABLE_URL}/${record.id}`, {
       method: 'PATCH',
       headers: {
@@ -94,12 +91,10 @@ async function geocodeAndSaveMissingCoords(record) {
       body: JSON.stringify({ fields: { Latitude: lat, Longitude: lng } })
     });
 
-    record.Latitude = lat;
-    record.Longitude = lng;
     return record;
   } catch (error) {
     console.error('Geocoding failed:', record.Address, error);
-    return null;
+    return record;
   }
 }
 
@@ -113,11 +108,9 @@ function createMarkers(data) {
 
   const uniqueNames = [...new Set(data.map(row => row.Name).filter(Boolean))];
   const colorMap = assignStableGradientColors(uniqueNames);
-
   const tagGroups = {};
-  const groupedOptions = {};
 
-  data.forEach((row, index) => {
+  data.forEach(row => {
     const lat = parseFloat(row.Latitude);
     const lng = parseFloat(row.Longitude);
     if (isNaN(lat) || isNaN(lng)) return;
@@ -138,10 +131,10 @@ function createMarkers(data) {
       cursor: 'pointer'
     });
 
-    // Label
+    // Label element
     const label = document.createElement('div');
     label.className = 'marker-label';
-    label.innerText = row["Name"] || category;
+    label.innerText = row.Name || category;
     Object.assign(label.style, {
       position: 'absolute',
       top: '24px',
@@ -160,7 +153,7 @@ function createMarkers(data) {
     // Popup
     const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
       <div style="max-width: 250px;">
-        <h3>${row["Name"] || category}</h3>
+        <h3>${row.Name || category}</h3>
         ${row.Description ? `<p>${row.Description}</p>` : ''}
         ${row.Address ? `<p><b>Address:</b><br>${row.Address}</p>` : ''}
       </div>
@@ -175,12 +168,8 @@ function createMarkers(data) {
     marker.rowData = row;
     allMarkers.push(marker);
 
-    // Group by category
     if (!tagGroups[category]) tagGroups[category] = [];
     tagGroups[category].push(marker);
-
-    if (!groupedOptions[category]) groupedOptions[category] = [];
-    groupedOptions[category].push({ label: row["Name"] || category, index });
   });
 
   buildLegend(tagGroups, colorMap);
@@ -207,9 +196,7 @@ function buildLegend(tagGroups, colorMap) {
       list.className = 'legend-org-list';
       list.style.display = 'block';
 
-      markers.sort((a, b) =>
-        (a.rowData["Name"] || "").toLowerCase().localeCompare((b.rowData["Name"] || "").toLowerCase())
-      );
+      markers.sort((a, b) => (a.rowData.Name || '').localeCompare(b.rowData.Name || ''));
 
       markers.forEach(marker => {
         const li = document.createElement('li');
@@ -224,10 +211,10 @@ function buildLegend(tagGroups, colorMap) {
         });
 
         const label = document.createElement('span');
-        label.textContent = marker.rowData["Name"] || "Unnamed";
-        Object.assign(label.style, { cursor: 'pointer', textDecoration: 'underline' });
+        label.textContent = marker.rowData.Name || 'Unnamed';
+        label.style.cursor = 'pointer';
         label.addEventListener('click', () => {
-          map.flyTo({ center: marker.getLngLat(), zoom: 15, essential: true });
+          map.flyTo({ center: marker.getLngLat(), zoom: 15 });
           marker.togglePopup();
         });
 
@@ -246,9 +233,6 @@ function buildLegend(tagGroups, colorMap) {
         const collapsed = list.style.display === 'none';
         list.style.display = collapsed ? 'block' : 'none';
         header.querySelector('.arrow').textContent = collapsed ? '▾' : '▸';
-        markers.forEach(marker => {
-          marker.getElement().style.display = collapsed ? 'block' : 'none';
-        });
       });
 
       section.append(header, list);
@@ -268,29 +252,18 @@ map.on('zoom', () => {
   });
 });
 
-map.on('load', () => {
+map.on('load', async () => {
   // Load icons if defined
   Object.values(iconMap).forEach(iconName => {
     map.loadImage(`icons/${iconName}.png`, (error, image) => {
-      if (error) {
-        console.warn(`Could not load icon "${iconName}":`, error);
-      } else if (!map.hasImage(iconName)) {
-        map.addImage(iconName, image);
-      }
+      if (!error && !map.hasImage(iconName)) map.addImage(iconName, image);
     });
   });
 
-  // Fetch data
-  fetchData().then(records => {
-  // Airtable returns records in this shape: { id, fields: {...} }
-  // We need to pass only the fields but keep id handy for updates
-  const data = records.map(r => ({
-    id: r.id,
-    ...r.fields
-  }));
+  // Fetch and process data
+  let records = await fetchData();
+  let data = await Promise.all(records.map(async r => geocodeIfMissing({ id: r.id, ...r.fields })));
   createMarkers(data);
-});
-
 
   // Subway layers
   map.addSource('subway-lines', { type: 'geojson', data: 'nyc-subway-routes.geojson' });
@@ -302,16 +275,14 @@ map.on('load', () => {
     paint: {
       'line-width': 2,
       'line-color': [
-        'match',
-        ['get', 'rt_symbol'],
+        'match', ['get', 'rt_symbol'],
         '1', '#EE352E', '2', '#EE352E', '3', '#EE352E',
         '4', '#00933C', '5', '#00933C', '6', '#00933C',
         'A', '#2850AD', 'C', '#2850AD', 'E', '#2850AD',
         'B', '#FF6319', 'D', '#FF6319', 'F', '#FF6319', 'M', '#FF6319',
         'N', '#FCCC0A', 'Q', '#FCCC0A', 'R', '#FCCC0A', 'W', '#FCCC0A',
         'L', '#A7A9AC', 'G', '#6CBE45', 'J', '#996633', 'Z', '#996633',
-        '7', '#B933AD',
-        '#000000'
+        '7', '#B933AD', '#000000'
       ]
     }
   });
@@ -335,15 +306,11 @@ map.on('load', () => {
 // =======================
 map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
 
-// Toggle legend
-const legendPanel = document.getElementById('legend-panel');
-const legendToggle = document.getElementById('legend-toggle');
-legendToggle.addEventListener('click', () => {
+document.getElementById('legend-toggle').addEventListener('click', () => {
+  const legendPanel = document.getElementById('legend-panel');
   legendPanel.classList.toggle('collapsed');
-  legendToggle.textContent = legendPanel.classList.contains('collapsed') ? 'Show' : 'Hide';
 });
 
-// Reset legend
 document.getElementById('reset-legend').addEventListener('click', () => {
   document.querySelectorAll('.legend-org-list input[type="checkbox"]').forEach(cb => cb.checked = true);
   allMarkers.forEach(marker => marker.getElement().style.display = 'block');
@@ -351,17 +318,12 @@ document.getElementById('reset-legend').addEventListener('click', () => {
 
 // Info overlay
 const mapGuideOverlay = document.getElementById('map-guide-overlay');
-const mapGuideClose = document.getElementById('map-guide-close');
 const infoButton = document.getElementById('info-button');
+const mapGuideClose = document.getElementById('map-guide-close');
 
-if (infoButton) {
-  infoButton.addEventListener('click', () => mapGuideOverlay.style.display = 'flex');
-}
-if (mapGuideClose) {
-  mapGuideClose.addEventListener('click', () => mapGuideOverlay.style.display = 'none');
-}
+if (infoButton) infoButton.addEventListener('click', () => mapGuideOverlay.style.display = 'flex');
+if (mapGuideClose) mapGuideClose.addEventListener('click', () => mapGuideOverlay.style.display = 'none');
 
-// Intro overlay
 document.getElementById('close-intro').addEventListener('click', () => {
   document.getElementById('intro-overlay').style.display = 'none';
   mapGuideOverlay.style.display = 'flex';
