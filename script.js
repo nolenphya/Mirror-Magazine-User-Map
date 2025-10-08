@@ -5,7 +5,12 @@
 mapboxgl.accessToken = 'pk.eyJ1Ijoibm9sZW5waHlhIiwiYSI6ImNtZmJ5N2o2cjByeGcybHBvcWgyeHpuZjYifQ.e1T0G8En--8IQLxLxriS2Q';
 const map = new mapboxgl.Map({
   container: 'map',
-  style: 'mapbox://styles/nolenphya/cm8hobpgo00u101s5d3ebdjdz',
+  style: 'mapbox://styles/mapbox/standard',
+  config: {
+    basemap: {
+      theme: "monochrome",
+    }
+  },
   center: [-73.94, 40.73],
   zoom: 11
 });
