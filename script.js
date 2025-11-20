@@ -6,13 +6,24 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoibm9sZW5waHlhIiwiYSI6ImNtZmJ5N2o2cjByeGcybHBvc
 const map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/nolenphya/cm8hobpgo00u101s5d3ebdjdz',
-  config: {
-    basemap: {
-      theme: "monochrome",
-    }
-  },
   center: [-73.94, 40.73],
   zoom: 11
+});
+
+// Add mapbox geolocation control
+const geolocate = new mapboxgl.GeolocateControl({
+  positionOptions: {
+    enableHighAccuracy: true
+  },
+  trackUserLocation: true,   // 🟢 follow the user as they move
+  showUserHeading: true      // 🧭 show device direction arrow
+});
+
+map.addControl(geolocate, 'bottom-right');
+
+// Trigger immediate geolocation when the map is ready (optional)
+map.on('load', () => {
+  geolocate.trigger(); 
 });
 
 // Global vars
@@ -48,30 +59,41 @@ function assignStableGradientColors(names) {
 // =======================
 // Data Fetching
 // =======================
+// =======================
+// Data Fetching (with Pagination)
+// =======================
 async function fetchData() {
   const filterFormula = encodeURIComponent("{Approved}=TRUE()");
   const viewName = encodeURIComponent("main");
-
-  // Use a new variable name here
-  const fetchUrl = `${AIRTABLE_URL}?view=${viewName}&filterByFormula=${filterFormula}`;
+  let allRecords = [];
+  let offset = null;
 
   try {
-    const res = await fetch(fetchUrl, {
-      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
-    });
+    do {
+      const fetchUrl = `${AIRTABLE_URL}?view=${viewName}&filterByFormula=${filterFormula}${
+        offset ? `&offset=${offset}` : ""
+      }`;
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`Airtable Error (${res.status}):`, errorText);
-      return [];
-    }
+      const res = await fetch(fetchUrl, {
+        headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
+      });
 
-    const data = await res.json();
-    return data.records || [];
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Airtable Error (${res.status}):`, errorText);
+        return allRecords;
+      }
+
+      const data = await res.json();
+      allRecords = allRecords.concat(data.records || []);
+      offset = data.offset || null; // Airtable gives a new offset if more pages exist
+    } while (offset);
+
+    return allRecords;
 
   } catch (err) {
     console.error("Fetch failed:", err);
-    return [];
+    return allRecords;
   }
 }
 
