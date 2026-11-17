@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contribute Photo - Map Archive</title>
+  <!-- Tailwind CSS for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- exifr library for parsing EXIF metadata -->
+  <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+  <!-- Modal Container -->
+  <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-700">
+    <!-- Header -->
+    <div class="bg-gray-700 px-6 py-4 flex justify-between items-center border-b border-gray-600">
+      <h3 class="text-lg font-semibold text-white">Add Photo to Archive</h3>
+      <button class="text-gray-400 hover:text-white text-xl font-bold">&times;</button>
+    </div>
+
+    <!-- Form Content -->
+    <form id="photoForm" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      
+      <!-- Photo Upload & EXIF Status -->
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Photo File *</label>
+        <input type="file" id="photoFile" accept="image/*" required
+          class="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer bg-gray-900 rounded-lg border border-gray-700">
+        <p id="exifStatus" class="text-xs text-indigo-400 mt-1">Upload a photo with location data to auto-fill coordinates and camera details.</p>
+      </div>
+
+      <!-- Contributor & Caption Info -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Your Name *</label>
+          <input type="text" id="name" required placeholder="e.g. Nolen Scruggs"
+            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Film Stock (Optional)</label>
+          <input type="text" id="film" placeholder="e.g. Kodak Portra 400"
+            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Caption *</label>
+          <input type="text" id="caption" required placeholder="Short title or caption"
+            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Camera (Auto-detected or Manual)</label>
+          <input type="text" id="camera" placeholder="e.g. Leica M6"
+            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+        <textarea id="description" rows="2" placeholder="Historical context or details..."
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+      </div>
+
+      <!-- Address Breakdown -->
+      <div class="border-t border-gray-700 pt-4 mt-4">
+        <h4 class="text-sm font-medium text-indigo-400 mb-3">Location Information</h4>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-medium text-gray-400 mb-1">Street Address</label>
+            <input type="text" id="street" placeholder="123 Main St"
+              class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Unit / Apt</label>
+            <input type="text" id="unit" placeholder="Floor 2"
+              class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Borough / City</label>
+            <input type="text" id="borough" placeholder="Queens"
+              class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">State</label>
+            <input type="text" id="state" placeholder="NY"
+              class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Zip Code</label>
+            <input type="text" id="zipCode" placeholder="11355"
+              class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden Coordinates (populated by EXIF or map pin drag) -->
+      <div class="grid grid-cols-2 gap-4 bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+        <div>
+          <span class="block text-xs text-gray-400">Latitude</span>
+          <input type="text" id="latitude" readonly class="w-full bg-transparent text-xs text-indigo-300 font-mono focus:outline-none" placeholder="Not set">
+        </div>
+        <div>
+          <span class="block text-xs text-gray-400">Longitude</span>
+          <input type="text" id="longitude" readonly class="w-full bg-transparent text-xs text-indigo-300 font-mono focus:outline-none" placeholder="Not set">
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="pt-4 flex justify-end space-x-3">
+        <button type="button" class="px-4 py-2 rounded-lg text-sm bg-gray-700 hover:bg-gray-600 font-medium">Cancel</button>
+        <button type="submit" class="px-5 py-2 rounded-lg text-sm bg-indigo-600 hover:bg-indigo-500 font-medium text-white shadow-lg">Submit to Archive</button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- EXIF Parsing & Handling Script -->
+  <script>
+    const fileInput = document.getElementById('photoFile');
+    const exifStatus = document.getElementById('exifStatus');
+    const latInput = document.getElementById('latitude');
+    const lonInput = document.getElementById('longitude');
+    const cameraInput = document.getElementById('camera');
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        exifStatus.textContent = "Reading EXIF metadata...";
+        
+        // Extract GPS and Camera make/model using exifr
+        const exifData = await exifr.parse(file, { tiff: true, gps: true });
+        
+        if (exifData) {
+          // Handle GPS Coordinates
+          if (exifData.latitude && exifData.longitude) {
+            latInput.value = exifData.latitude;
+            lonInput.value = exifData.longitude;
+            exifStatus.textContent = `Success! Location extracted: ${exifData.latitude.toFixed(4)}, ${exifData.longitude.toFixed(4)}`;
+            exifStatus.className = "text-xs text-emerald-400 mt-1";
+          } else {
+            exifStatus.textContent = "Photo loaded, but no GPS metadata found. Please drop a pin or enter address manually.";
+            exifStatus.className = "text-xs text-amber-400 mt-1";
+          }
+
+          // Handle Camera Make & Model
+          const make = exifData.Make ? exifData.Make.trim() : '';
+          const model = exifData.Model ? exifData.Model.trim() : '';
+          if (make || model) {
+            cameraInput.value = `${make} ${model}`.trim();
+          }
+        } else {
+          exifStatus.textContent = "No EXIF metadata found in this image file.";
+          exifStatus.className = "text-xs text-gray-400 mt-1";
+        }
+      } catch (err) {
+        console.error("Error parsing EXIF:", err);
+        exifStatus.textContent = "Could not read image metadata.";
+        exifStatus.className = "text-xs text-rose-400 mt-1";
+      }
+    });
+
+    document.getElementById('photoForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const submitButton = e.target.querySelector('button[type="submit"]');
+  submitButton.textContent = "Uploading & Saving...";
+  submitButton.disabled = true;
+
+  try {
+    const dataForm = new FormData();
+    
+    // Append all form inputs
+    dataForm.append("photoFile", document.getElementById('photoFile').files[0]);
+    dataForm.append("name", document.getElementById('name').value);
+    dataForm.append("caption", document.getElementById('caption').value);
+    dataForm.append("description", document.getElementById('description').value);
+    dataForm.append("camera", document.getElementById('camera').value);
+    dataForm.append("film", document.getElementById('film').value);
+    dataForm.append("street", document.getElementById('street').value);
+    dataForm.append("unit", document.getElementById('unit').value);
+    dataForm.append("borough", document.getElementById('borough').value);
+    dataForm.append("state", document.getElementById('state').value);
+    dataForm.append("zipCode", document.getElementById('zipCode').value);
+    dataForm.append("latitude", document.getElementById('latitude').value);
+    dataForm.append("longitude", document.getElementById('longitude').value);
+
+    // Call your deployed Cloudflare Worker endpoint
+    const response = await fetch('https://your-worker-subdomain.workers.dev', {
+      method: 'POST',
+      body: dataForm
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      alert("Photo uploaded and submitted to archive successfully! It is pending review.");
+      document.getElementById('photoForm').reset();
+    } else {
+      alert(`Submission failed: ${result.error}`);
+    }
+  } catch (err) {
+    console.error("Network or submission error:", err);
+    alert("An error occurred while uploading. Please try again.");
+  } finally {
+    submitButton.textContent = "Submit to Archive";
+    submitButton.disabled = false;
+  }
+});
+  </script>
+
+</body>
+</html>

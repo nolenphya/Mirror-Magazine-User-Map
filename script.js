@@ -1,4 +1,3 @@
-
 // =======================
 // Mapbox Setup
 // =======================
@@ -12,23 +11,19 @@ const map = new mapboxgl.Map({
 
 // Add mapbox geolocation control
 const geolocate = new mapboxgl.GeolocateControl({
-  positionOptions: {
-    enableHighAccuracy: true
-  },
-  trackUserLocation: true,   // 🟢 follow the user as they move
-  showUserHeading: true      // 🧭 show device direction arrow
+  positionOptions: { enableHighAccuracy: true },
+  trackUserLocation: true,
+  showUserHeading: true
 });
 
 map.addControl(geolocate, 'bottom-right');
 
-// Trigger immediate geolocation when the map is ready (optional)
 map.on('load', () => {
   geolocate.trigger(); 
 });
 
-// Global vars
 let allMarkers = [];
-const iconMap = {}; // Add your custom icon mapping if needed
+const iconMap = {};
 
 // =======================
 // Airtable Setup
@@ -59,9 +54,6 @@ function assignStableGradientColors(names) {
 // =======================
 // Data Fetching
 // =======================
-// =======================
-// Data Fetching (with Pagination)
-// =======================
 async function fetchData() {
   const filterFormula = encodeURIComponent("{Approved}=TRUE()");
   const viewName = encodeURIComponent("main");
@@ -86,47 +78,13 @@ async function fetchData() {
 
       const data = await res.json();
       allRecords = allRecords.concat(data.records || []);
-      offset = data.offset || null; // Airtable gives a new offset if more pages exist
+      offset = data.offset || null;
     } while (offset);
 
     return allRecords;
-
   } catch (err) {
     console.error("Fetch failed:", err);
     return allRecords;
-  }
-}
-
-
-
-async function geocodeAndSaveMissingCoords(record) {
-  if (!record.Address) return null;
-
-  const query = encodeURIComponent(record.Address);
-  const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${mapboxgl.accessToken}`;
-
-  try {
-    const res = await fetch(geocodeUrl);
-    const json = await res.json();
-    if (!json.features.length) return null;
-
-    const [lng, lat] = json.features[0].center;
-
-    await fetch(`${AIRTABLE_URL}/${record.id}`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ fields: { Latitude: lat, Longitude: lng } })
-    });
-
-    record.Latitude = lat;
-    record.Longitude = lng;
-    return record;
-  } catch (error) {
-    console.error('Geocoding failed:', record.Address, error);
-    return null;
   }
 }
 
@@ -134,15 +92,12 @@ async function geocodeAndSaveMissingCoords(record) {
 // Marker Creation
 // =======================
 function createMarkers(data) {
-  // Clear old markers
   allMarkers.forEach(m => m.remove());
   allMarkers = [];
 
   const uniqueNames = [...new Set(data.map(row => row.Name).filter(Boolean))];
   const colorMap = assignStableGradientColors(uniqueNames);
-
   const tagGroups = {};
-  const groupedOptions = {};
 
   data.forEach((row, index) => {
     const lat = parseFloat(row.Latitude);
@@ -152,7 +107,6 @@ function createMarkers(data) {
     const category = row.Name || "Uncategorized";
     const color = colorMap[category] || "#000";
 
-    // Marker element
     const el = document.createElement('div');
     el.className = 'marker';
     Object.assign(el.style, {
@@ -165,7 +119,6 @@ function createMarkers(data) {
       cursor: 'pointer'
     });
 
-    // Label
     const label = document.createElement('div');
     label.className = 'marker-label';
     label.innerText = row["Name"] || category;
@@ -184,7 +137,6 @@ function createMarkers(data) {
 
     el.appendChild(label);
 
-    // Popup
     const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
       <div style="max-width: 250px;">
         <h3>${row["Name"] || category}</h3>
@@ -202,12 +154,8 @@ function createMarkers(data) {
     marker.rowData = row;
     allMarkers.push(marker);
 
-    // Group by category
     if (!tagGroups[category]) tagGroups[category] = [];
     tagGroups[category].push(marker);
-
-    if (!groupedOptions[category]) groupedOptions[category] = [];
-    groupedOptions[category].push({ label: row["Name"] || category, index });
   });
 
   buildLegend(tagGroups, colorMap);
@@ -234,13 +182,8 @@ function buildLegend(tagGroups, colorMap) {
       list.className = 'legend-org-list';
       list.style.display = 'block';
 
-      markers.sort((a, b) =>
-        (a.rowData["Name"] || "").toLowerCase().localeCompare((b.rowData["Name"] || "").toLowerCase())
-      );
-
       markers.forEach(marker => {
         const li = document.createElement('li');
-
         const swatch = document.createElement('span');
         Object.assign(swatch.style, {
           display: 'inline-block',
@@ -284,7 +227,114 @@ function buildLegend(tagGroups, colorMap) {
 }
 
 // =======================
-// Map Event Listeners
+// Photo Contribution Modal & EXIF Logic
+// =======================
+const contributeModal = document.getElementById('contribute-modal');
+const openModalBtn = document.getElementById('open-contribute-modal');
+const closeModalBtn = document.getElementById('close-contribute-modal');
+const cancelContributeBtn = document.getElementById('cancel-contribute');
+
+if (openModalBtn) openModalBtn.addEventListener('click', () => contributeModal.style.display = 'flex');
+if (closeModalBtn) closeModalBtn.addEventListener('click', () => contributeModal.style.display = 'none');
+if (cancelContributeBtn) cancelContributeBtn.addEventListener('click', () => contributeModal.style.display = 'none');
+
+// EXIF Reader
+const fileInput = document.getElementById('photoFile');
+const exifStatus = document.getElementById('exifStatus');
+const latInput = document.getElementById('latitude');
+const lonInput = document.getElementById('longitude');
+const cameraInput = document.getElementById('camera');
+
+if (fileInput) {
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      exifStatus.textContent = "Reading EXIF metadata...";
+      const exifData = await exifr.parse(file, { tiff: true, gps: true });
+      
+      if (exifData) {
+        if (exifData.latitude && exifData.longitude) {
+          latInput.value = exifData.latitude;
+          lonInput.value = exifData.longitude;
+          exifStatus.textContent = `Location extracted: ${exifData.latitude.toFixed(4)}, ${exifData.longitude.toFixed(4)}`;
+          exifStatus.className = "exif-status success";
+        } else {
+          exifStatus.textContent = "Photo loaded (No GPS metadata found in file). Use address autofill.";
+          exifStatus.className = "exif-status warning";
+        }
+
+        const make = exifData.Make ? exifData.Make.trim() : '';
+        const model = exifData.Model ? exifData.Model.trim() : '';
+        if (make || model) {
+          cameraInput.value = `${make} ${model}`.trim();
+        }
+      } else {
+        exifStatus.textContent = "No EXIF metadata found.";
+        exifStatus.className = "exif-status";
+      }
+    } catch (err) {
+      console.error("Error parsing EXIF:", err);
+      exifStatus.textContent = "Could not read image metadata.";
+      exifStatus.className = "exif-status error";
+    }
+  });
+}
+
+// Form Submission Handler
+const photoForm = document.getElementById('photoForm');
+if (photoForm) {
+  photoForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = photoForm.querySelector('button[type="submit"]');
+    submitBtn.textContent = "Submitting...";
+    submitBtn.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append("photoFile", document.getElementById('photoFile').files[0]);
+      formData.append("name", document.getElementById('name').value);
+      formData.append("caption", document.getElementById('caption').value);
+      formData.append("description", document.getElementById('description').value);
+      formData.append("camera", document.getElementById('camera').value);
+      formData.append("film", document.getElementById('film').value);
+      formData.append("street", document.getElementById('street').value);
+      formData.append("unit", document.getElementById('unit').value);
+      formData.append("borough", document.getElementById('borough').value);
+      formData.append("state", document.getElementById('state').value);
+      formData.append("zipCode", document.getElementById('zipCode').value);
+      formData.append("latitude", document.getElementById('latitude').value);
+      formData.append("longitude", document.getElementById('longitude').value);
+
+      // TODO: Replace with your deployed Cloudflare Worker URL
+      const workerUrl = 'https://your-worker-subdomain.workers.dev';
+      
+      const response = await fetch(workerUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        alert("Photo submitted successfully! It is pending moderation review.");
+        photoForm.reset();
+        contributeModal.style.display = 'none';
+      } else {
+        alert(`Submission error: ${result.error}`);
+      }
+    } catch (err) {
+      console.error("Submission failed:", err);
+      alert("An error occurred during submission. Please try again.");
+    } finally {
+      submitBtn.textContent = "Submit to Archive";
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+// =======================
+// Map Load & Events
 // =======================
 map.on('zoom', () => {
   const zoomLevel = map.getZoom();
@@ -296,30 +346,15 @@ map.on('zoom', () => {
 });
 
 map.on('load', () => {
-  // Load icons if defined
-  Object.values(iconMap).forEach(iconName => {
-    map.loadImage(`icons/${iconName}.png`, (error, image) => {
-      if (error) {
-        console.warn(`Could not load icon "${iconName}":`, error);
-      } else if (!map.hasImage(iconName)) {
-        map.addImage(iconName, image);
-      }
-    });
+  fetchData().then(records => {
+    const data = records.map(r => ({
+      id: r.id,
+      ...r.fields
+    }));
+    createMarkers(data);
   });
 
-  // Fetch data
-  fetchData().then(records => {
-  // Airtable returns records in this shape: { id, fields: {...} }
-  // We need to pass only the fields but keep id handy for updates
-  const data = records.map(r => ({
-    id: r.id,
-    ...r.fields
-  }));
-  createMarkers(data);
-});
-
-
-  // Subway layers
+  // Subway lines & stops layers...
   map.addSource('subway-lines', { type: 'geojson', data: 'nyc-subway-routes.geojson' });
   map.addLayer({
     id: 'subway-lines-layer',
@@ -342,27 +377,11 @@ map.on('load', () => {
       ]
     }
   });
-
-  map.addSource('subway-stops', { type: 'geojson', data: 'nyc-subway-stops.geojson' });
-  map.addLayer({
-    id: 'subway-stations-stops',
-    type: 'circle',
-    source: 'subway-stops',
-    paint: {
-      'circle-radius': 1,
-      'circle-color': '#ffffff',
-      'circle-stroke-width': 1,
-      'circle-stroke-color': '#000000'
-    }
-  });
 });
 
-// =======================
 // UI Controls
-// =======================
 map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
 
-// Toggle legend
 const legendPanel = document.getElementById('legend-panel');
 const legendToggle = document.getElementById('legend-toggle');
 legendToggle.addEventListener('click', () => {
@@ -370,25 +389,17 @@ legendToggle.addEventListener('click', () => {
   legendToggle.textContent = legendPanel.classList.contains('collapsed') ? 'Show' : 'Hide';
 });
 
-// Reset legend
 document.getElementById('reset-legend').addEventListener('click', () => {
   document.querySelectorAll('.legend-org-list input[type="checkbox"]').forEach(cb => cb.checked = true);
   allMarkers.forEach(marker => marker.getElement().style.display = 'block');
 });
 
-// Info overlay
 const mapGuideOverlay = document.getElementById('map-guide-overlay');
 const mapGuideClose = document.getElementById('map-guide-close');
 const infoButton = document.getElementById('info-button');
 
-if (infoButton) {
-  infoButton.addEventListener('click', () => mapGuideOverlay.style.display = 'flex');
-}
-if (mapGuideClose) {
-  mapGuideClose.addEventListener('click', () => mapGuideOverlay.style.display = 'none');
-}
-
-// Intro overlay
+if (infoButton) infoButton.addEventListener('click', () => mapGuideOverlay.style.display = 'flex');
+if (mapGuideClose) mapGuideClose.addEventListener('click', () => mapGuideOverlay.style.display = 'none');
 document.getElementById('close-intro').addEventListener('click', () => {
   document.getElementById('intro-overlay').style.display = 'none';
   mapGuideOverlay.style.display = 'flex';

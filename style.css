@@ -7,7 +7,7 @@ body, html {
 }
 
 #map {
-  margin-top: 80px; /* Matches header height */
+  margin-top: 80px;
   position: absolute;
   top: 0;
   bottom: 0;
@@ -15,13 +15,228 @@ body, html {
   z-index: 1;
 }
 
-/* Intro Overlay */
-#intro-overlay {
+/* Header & Contribute Button */
+#site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 10px 20px;
+  z-index: 1001;
+  position: relative;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+#fth-logo {
+  height: 80px;
+  margin-right: 12px;
+}
+
+#site-header h1 {
+  font-size: 48px;
+  margin: 0;
+  font-family: 'Arial';
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.contribute-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: background 0.2s;
+}
+
+.contribute-btn:hover {
+  background: #0056b3;
+}
+
+/* Modal Overlay & Form Styling */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 20000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #ffffff;
+  max-width: 600px;
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  background: #f8f9fa;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.modal-form {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  color: #495057;
+  margin-bottom: 5px;
+}
+
+.form-group input[type="text"],
+.form-group textarea,
+.form-group input[type="file"] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-row.three-col .form-group {
+  flex: 1;
+}
+
+.form-group.span-2 {
+  flex: 2;
+}
+
+.exif-status {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 4px;
+}
+
+.exif-status.success { color: #28a745; }
+.exif-status.warning { color: #ffc107; }
+.exif-status.error { color: #dc3545; }
+
+.address-section {
+  border-top: 1px solid #dee2e6;
+  margin-top: 20px;
+  padding-top: 15px;
+}
+
+.address-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #007bff;
+}
+
+.coords-display {
+  display: flex;
+  gap: 15px;
+  background: #f1f3f5;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-bottom: 15px;
+}
+
+.coords-display div {
+  flex: 1;
+}
+
+.coords-display input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-family: monospace;
+  font-weight: bold;
+  color: #495057;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #dee2e6;
+  padding-top: 15px;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Intro Overlay */
+#intro-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
   background: rgba(255, 255, 255, 0.97);
   z-index: 10000;
   display: flex;
@@ -29,21 +244,9 @@ body, html {
   align-items: center;
   overflow-y: auto;
   padding: 20px;
-
-  /* Add background image */
-  background-image: url('mirrorteam.jpg'); /* make sure path is correct */
+  background-image: url('mirrorteam.jpg');
   background-size: cover;
   background-position: center;
-}
-
-/* Use a semi-transparent overlay for opacity effect */
-#intro-overlay::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(255, 255, 255, 0.25); /* adjust darkness/lightness */
-  z-index: -1;
 }
 
 .intro-content {
@@ -53,7 +256,6 @@ body, html {
   padding: 20px;
   border-radius: 8px;
   text-align: center;
-  font-family: inherit;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -83,19 +285,11 @@ body, html {
   overflow: hidden;
 }
 
-/* Collapsed state */
-#legend-panel.collapsed #legend-wrapper {
-  max-height: 0px; /* show header only */
-  overflow: hidden;
-}
-
-/* Legend Wrapper */
 #legend-wrapper {
-   flex-grow: 1;  /* Let it grow with content */
+  flex-grow: 1;
   overflow-y: auto;
 }
 
-/* Legend Header */
 .legend-header {
   display: flex;
   justify-content: space-between;
@@ -112,7 +306,7 @@ body, html {
   margin: 8px auto;
 }
 
-.legend-header button {
+.legend-header button, #legend-toggle {
   background: #007bff;
   color: white;
   border: none;
@@ -121,13 +315,6 @@ body, html {
   cursor: pointer;
 }
 
-#legend-header-search {
-  padding: 10px;
-  background: inherit;
-  flex-shrink: 0; /* don't shrink */
-}
-
-/* Search Bar */
 #address-search {
   margin: 0 10px 10px 10px;
 }
@@ -141,33 +328,13 @@ body, html {
   border-radius: 4px;
 }
 
-
-/* Legend Content fills the rest */
-/* This is the scrollable area */
-/* THIS is the important change */
 #legend-content {
-  flex-grow: 1;        /* take all remaining space */
-  overflow-y: auto;    /* enable scrolling */
+  flex-grow: 1;
+  overflow-y: auto;
   overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
   padding: 10px;
 }
 
-/* Toggle Button */
-#legend-toggle {
-  background: #007bff;
-  color: white;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-#legend-toggle:hover {
-  background: #333;
-}
-
-/* Category & Items */
 .legend-category {
   margin-bottom: 12px;
 }
@@ -177,10 +344,6 @@ body, html {
   align-items: center;
   cursor: pointer;
   margin: 0;
-}
-
-.legend-category .arrow {
-  margin-right: 6px;
 }
 
 .legend-org-list {
@@ -198,31 +361,18 @@ body, html {
   cursor: pointer;
 }
 
-.legend-color-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.legend-org-list li.highlight {
-  background-color: #f0f8ff;
-  transition: background-color 0.3s;
-}
-
- 
 .logo {
   max-height: 100px;
   margin: 10px;
   display: inline-block;
 }
 
-/* Info Box (New Positioning) */
+/* Info Guide Overlay */
 #map-guide-overlay {
-   position: fixed;
+  position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 420px;         /* wider */
+  width: 420px;
   max-height: 60vh;
   background: rgba(255, 255, 255, 0.97);
   display: none;
@@ -232,17 +382,6 @@ body, html {
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
   z-index: 10000;
   overflow-y: auto;
-}
-
-
-
-
-.map-guide-content {
-background: none;
-  padding: 0;
-  border-radius: 0;
-  box-shadow: none;
-  text-align: left;
 }
 
 #map-guide-close {
@@ -256,33 +395,6 @@ background: none;
   color: #333;
 }
 
-#site-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: white;
-  padding: 10px 20px;
-  z-index: 1001;
-  position: relative;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-}
-
-#fth-logo {
-  height: 80px;
-  margin-right: 12px;
-}
-
-#site-header h1 {
-  font-size: 48px;
-  margin: 0;
-  font-family: 'Arial';
-}
-
-/* Info Button Positioning */
 #info-button {
   position: fixed;
   bottom: 20px;
@@ -302,156 +414,20 @@ background: none;
   align-items: center;
 }
 
-#info-button:hover {
-  background: #eee;
-}
-
-
 .marker-label {
   pointer-events: none;
   font-family: Arial, Helvetica, sans-serif;
 }
 
-
 @media (max-width: 600px) {
   #site-header h1 {
-    font-size: 32px !important;
-    line-height: 1.2;
+    font-size: 24px !important;
+  }
+  #fth-logo {
+    height: 50px;
+  }
+  .form-row {
+    flex-direction: column;
+    gap: 0;
   }
 }
-
-@media (max-width: 600px) {
-#fth-logo {
-  height: 80px;
-  margin-right: 12px;
-}
-}
-
-@media (max-width: 600px) {
-  #legend-handle {
-    background: #999;
-  }
-}
-
-@media (max-width: 600px) {
-  #legend-panel {
-    position: fixed !important;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    max-height: 25vh;
-    border-radius: 12px 12px 0 0;
-    box-shadow: 0 -2px 12px rgba(0,0,0,0.15);
-    background: rgba(255,255,255,0.95);
-    padding: 10px;
-    z-index: 1000;
-    transition: max-height 0.3s ease;
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 600px) {
-
-  #legend-panel.collapsed {
-   max-height: 60px; /* collapse to just header */
-  }
-
-  #legend-panel.expanded {
-    max-height: 70vh; /* expanded height */
-  }
-
-  #legend-wrapper {
-    max-height: calc(70vh - 60px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  #legend-content {
-       max-height: calc(25vh - 60px); /* fit content */
-  }
-
-  #search-input {
-    font-size: 1rem;
-    padding: 8px;
-  }
-
-
-#intro-overlay {
-   position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(255, 255, 255, 0.97);
-    z-index: 10000;
-    display: block; /* Allow natural flow instead of flex centering */
-    overflow-y: auto; /* Enable scrolling */
-    padding: 20px;
-}
-
-.intro-content {
-  background: white;
-    max-width: 550px;
-    width: 100%;
-    padding: 20px;
-    border-radius: 8px;
-    font-family: inherit;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-    margin: 40px auto; /* Center horizontally with margin */
-}
-
-#info-button {
-  position: static;       /* remove fixed positioning */
-  margin-left: auto;      /* push to the far right */
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 20px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#map-guide-overlay {
-    bottom: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
-    max-height: 80vh;
-    border-radius: 12px 12px 0 0;
-    padding: 15px;
-    overflow-y: auto;
-}
-
-  #map-guide-overlay h2, 
-  #map-guide-overlay p {
-    font-size: 14px;
-  }
-
-}
-
-.mapboxgl-ctrl-top-right {
-  top: 15px;
-  right: 10px;
-}
-
-@media (max-width: 600px) {
-  .mapboxgl-ctrl-top-right {
-    top: 60px;
-    right: 10px;
-    z-index: 1000;
-  }
-}
-
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-

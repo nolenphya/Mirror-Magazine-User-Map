@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mirror Magazine System Map</title>
 
-<!-- Select2 CSS -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
   <!-- Mapbox GL -->
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+
+  <!-- Mapbox Search JS (Address Autofill) -->
+  <script id="search-js" defer src="https://api.mapbox.com/search-js/v1.0.0/web.js"></script>
+  <!-- exifr for EXIF GPS & Camera metadata extraction -->
+  <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
 
   <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
@@ -25,6 +29,9 @@
     <img src="mirrormoney.png" alt="Mirror Magazine Logo" id="fth-logo">
     <h1>The Mirror Magazine IBX Project</h1>
   </div>
+  <div class="header-right">
+    <button id="open-contribute-modal" class="contribute-btn">➕ Contribute Photo</button>
+  </div>
 </header>
 
   <!-- Intro Overlay -->
@@ -32,70 +39,153 @@
     <div class="intro-content">
       <h2>Welcome to the Mirror Magazine IBX Project</h2>
       <p>
-In 2024, Mirror Magazine was conceived by Nolen Phya as part of their MA program in Urban Studies & Planning at the Massachusetts Institute of Technology. 
-The project started as a collaborative-multimedia project to document urban inequality in New York City through photography, mapping, archival technique and more.        </p>
-        <p>
-       The guiding idea was that by engaging local photographers to capture New York City through the camera and with a pointed focus, we can make clear to those with the power to make change what part of the bigger picture they’re missing.
-        </p>
-        <p>
-       In this next phase of the magazine the project turns its eyes to the IBX, a transformative transportation project that would connect Brooklyn, Queens and potentially the Bronx and Staten Island via one continuous train.  
-        </p>
-        <p>
-       By documenting the areas nearby the future train line, this project will create an archive of images that will allow future generations to better understand our contemporary times. Additionally, by generating images of neighborhoods currently, we can step back and visually understand what may be worth holding onto versus changing as transit-oriented development ultimately accompanies the train as a whole. 
-        </p>
+        In 2024, Mirror Magazine was conceived by Nolen Phya as part of their MA program in Urban Studies & Planning at the Massachusetts Institute of Technology. 
+        The project started as a collaborative-multimedia project to document urban inequality in New York City through photography, mapping, archival technique and more.
+      </p>
+      <p>
+        The guiding idea was that by engaging local photographers to capture New York City through the camera and with a pointed focus, we can make clear to those with the power to make change what part of the bigger picture they’re missing.
+      </p>
+      <p>
+        In this next phase of the magazine the project turns its eyes to the IBX, a transformative transportation project that would connect Brooklyn, Queens and potentially the Bronx and Staten Island via one continuous train.  
+      </p>
+      <p>
+        By documenting the areas nearby the future train line, this project will create an archive of images that will allow future generations to better understand our contemporary times. Additionally, by generating images of neighborhoods currently, we can step back and visually understand what may be worth holding onto versus changing as transit-oriented development ultimately accompanies the train as a whole. 
       </p>
       <a href="https://airtable.com/appeZ9qxsOgKiYPaJ/shrqCmtIjSMwdFlPu" target="_blank">
         We’re excited to continue growing this resource. If you’re interested in making a contribution, learn more here.  
         <br/><br/>
         <div class="logos">
-          
-  <img src="mirrormoney.png" alt="Mirror Logo" class="logo">
+          <img src="mirrormoney.png" alt="Mirror Logo" class="logo">
         </div>
       </a><br/>
       <button id="close-intro">Get Started</button>
     </div>
   </div>
 
-<!-- Map Guide Overlay -->
-<div id="map-guide-overlay" class="map-guide-overlay" style="display: none;">
-  <!-- Add inside your info box HTML -->
-<button id="map-guide-close" style="position: absolute; top: 8px; right: 12px; font-size: 24px; cursor: pointer;">&times;</button>
-
-  <div class="map-guide-content">
-    <h2>Navigating the Map</h2>
-    <p>Your guide to discovering and connecting with the Mirror Magazine IBX Project</p>
-    <ul style="text-align: left;">
-      <li>🗺️ <a href="https://airtable.com/apppBx0a9hj0Z1ciw/pagkf63IaBt2wJvFo/form" style="font-weight: bold;">Join the Map:</a> Film photographers are encouraged to submit a listing. Once approved, it will appear on the map. To request changes to your listing, reach out to the editor, <a href="mailto:nycmirror.project@gmail.com">Nolen Phya.</a> </li>
-      <br/>
-      <li>🔍 <b>Explore the IBX Corridor:</b> Use the filter tool to search for images by photographer. </li>
-      <br/>
-      <li>📍 <b>Share the Map:</b> Invite your creative networks to join and explore the map! </li>
-    </ul>
-    <p>Have a question? <a href="mailto: nycmirror.project@gmail.com">Contact us</a></p>
+  <!-- Map Guide Overlay -->
+  <div id="map-guide-overlay" class="map-guide-overlay" style="display: none;">
+    <button id="map-guide-close">&times;</button>
+    <div class="map-guide-content">
+      <h2>Navigating the Map</h2>
+      <p>Your guide to discovering and connecting with the Mirror Magazine IBX Project</p>
+      <ul style="text-align: left;">
+        <li>🗺️ <a href="https://airtable.com/apppBx0a9hj0Z1ciw/pagkf63IaBt2wJvFo/form" style="font-weight: bold;">Join the Map:</a> Film photographers are encouraged to submit a listing. Once approved, it will appear on the map. To request changes to your listing, reach out to the editor, <a href="mailto:nycmirror.project@gmail.com">Nolen Phya.</a></li>
+        <br/>
+        <li>🔍 <b>Explore the IBX Corridor:</b> Use the filter tool to search for images by photographer.</li>
+        <br/>
+        <li>📍 <b>Share the Map:</b> Invite your creative networks to join and explore the map!</li>
+      </ul>
+      <p>Have a question? <a href="mailto: nycmirror.project@gmail.com">Contact us</a></p>
+    </div>
   </div>
-</div>
 
+  <!-- Photo Contribution Modal -->
+  <div id="contribute-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Contribute Photo to Archive</h3>
+        <button id="close-contribute-modal" class="close-btn">&times;</button>
+      </div>
+      
+      <form id="photoForm" class="modal-form">
+        <!-- Photo File & EXIF Status -->
+        <div class="form-group">
+          <label for="photoFile">Photo File *</label>
+          <input type="file" id="photoFile" accept="image/*" required>
+          <p id="exifStatus" class="exif-status">Upload a photo with location data to auto-fill coordinates and camera details.</p>
+        </div>
 
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Your Name *</label>
+            <input type="text" id="name" required placeholder="e.g. Nolen Phya">
+          </div>
+          <div class="form-group">
+            <label for="film">Film Stock (Optional)</label>
+            <input type="text" id="film" placeholder="e.g. Kodak Portra 400">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="caption">Caption *</label>
+            <input type="text" id="caption" required placeholder="Short title or caption">
+          </div>
+          <div class="form-group">
+            <label for="camera">Camera</label>
+            <input type="text" id="camera" placeholder="Auto-detected or manual">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" rows="2" placeholder="Historical context or details..."></textarea>
+        </div>
+
+        <!-- Address Autofill Section -->
+        <div class="address-section">
+          <h4>Location Information</h4>
+          
+          <div class="form-row">
+            <div class="form-group span-2">
+              <label for="street">Street Address</label>
+              <!-- Mapbox Address Autofill Wrapper -->
+              <mapbox-address-autofill access-token="pk.eyJ1Ijoibm9sZW5waHlhIiwiYSI6ImNtZmJ5N2o2cjByeGcybHBvcWgyeHpuZjYifQ.e1T0G8En--8IQLxLxriS2Q">
+                <input type="text" id="street" autocomplete="address-line1" placeholder="Start typing address...">
+              </mapbox-address-autofill>
+            </div>
+            <div class="form-group">
+              <label for="unit">Unit / Apt</label>
+              <input type="text" id="unit" autocomplete="address-level4" placeholder="Floor 2">
+            </div>
+          </div>
+
+          <div class="form-row three-col">
+            <div class="form-group">
+              <label for="borough">Borough / City</label>
+              <input type="text" id="borough" autocomplete="address-level2" placeholder="Queens">
+            </div>
+            <div class="form-group">
+              <label for="state">State</label>
+              <input type="text" id="state" autocomplete="address-level1" placeholder="NY">
+            </div>
+            <div class="form-group">
+              <label for="zipCode">Zip Code</label>
+              <input type="text" id="zipCode" autocomplete="postal-code" placeholder="11355">
+            </div>
+          </div>
+        </div>
+
+        <!-- Coordinates Display -->
+        <div class="coords-display">
+          <div><span>Latitude:</span> <input type="text" id="latitude" readonly placeholder="Auto or Pin"></div>
+          <div><span>Longitude:</span> <input type="text" id="longitude" readonly placeholder="Auto or Pin"></div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="modal-actions">
+          <button type="button" id="cancel-contribute" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Submit to Archive</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Map -->
   <div id="map"></div>
-
-<button id="info-button" title="Info">ℹ️</button>
+  <button id="info-button" title="Info">ℹ️</button>
 
   <!-- Legend Panel -->
   <div id="legend-panel">
     <div id="legend-handle"></div>
     <div class="legend-header">
       <button id="reset-legend">Reset</button>
-        <button id="legend-toggle" title="Collapse Legend">Hide</button>
+      <button id="legend-toggle" title="Collapse Legend">Hide</button>
     </div>
-
     <div id="address-search">
-   <label for="org-directory">Search the directory:</label>
-<input type="text" id="search-input" placeholder="Search by name or tag..." style="width: 100%; padding: 6px;" />
-<div id="search-results" style="margin-top: 10px;"></div>
-
-
+      <label for="search-input">Search the directory:</label>
+      <input type="text" id="search-input" placeholder="Search by name or tag..." />
+      <div id="search-results" style="margin-top: 10px;"></div>
     </div>
     <div id="legend-wrapper">
       <div id="legend-content">
@@ -107,8 +197,7 @@ The project started as a collaborative-multimedia project to document urban ineq
   <!-- Scripts -->
   <script src="script.js"></script>
   <!-- jQuery + Select2 JS -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>
